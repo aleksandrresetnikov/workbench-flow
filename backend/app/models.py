@@ -76,7 +76,7 @@ class ProjectMember(Base):
     # Constraints
     __table_args__ = (
         UniqueConstraint('ProjectId', 'MemnerId', name='UniqueProjectMembers'),
-        CheckConstraint("Role IN ('Common', 'Admin')", name='ValidRoles'),
+        CheckConstraint('"Role" IN (\'Common\', \'Admin\')', name='ValidRoles'),
     )
 
 class TaskGroup(Base):

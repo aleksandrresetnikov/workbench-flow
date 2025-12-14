@@ -32,6 +32,17 @@ class UserWithToken(User):
     access_token: str
     token_type: str = "bearer"
 
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    username: Optional[str] = None
+
 class StoreFileBase(BaseModel):
     SourceName: str
     TagName: str

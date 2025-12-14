@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.security import HTTPBearer
 from app.database import engine, Base
 from app.api.endpoints import auth, users, projects, tasks
 
@@ -10,6 +11,8 @@ app = FastAPI(
     description="API для управления проектами и задачами",
     version="1.0.0"
 )
+
+security = HTTPBearer()
 
 # Подключаем роутеры
 app.include_router(auth.router, prefix="/api", tags=["auth"])
