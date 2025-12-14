@@ -1,9 +1,7 @@
 from sqlalchemy.orm import Session
 from typing import Optional, List
-from passlib.context import CryptContext
+import hashlib
 from app import models, schemas
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def get_user(db: Session, user_id: int) -> Optional[models.User]:
     return db.query(models.User).filter(
@@ -29,7 +27,7 @@ def get_users(db: Session, skip: int = 0, limit: int = 100) -> List[models.User]
     ).offset(skip).limit(limit).all()
 
 def create_user(db: Session, user: schemas.UserCreate) -> models.User:
-    hashed_password = pwd_context.hash(user.Password)
+    hashed_password = hashlib.sha256(user.Password.encode('utf-8')).hexdigest()
     db_user = models.User(
         Username=user.Username,
         Email=user.Email,
@@ -48,7 +46,7 @@ def update_user(db: Session, user_id: int, user_update: schemas.UserUpdate) -> O
     update_data = user_update.model_dump(exclude_unset=True)
     
     if 'Password' in update_data:
-        update_data['PasswordHash'] = pwd_context.hash(update_data.pop('Password'))
+        update_data['PasswordHash'] = hashlib.sha256(update_data.pop('Password').encode('utf-8')).hexdigest()
     
     for field, value in update_data.items():
         setattr(db_user, field, value)
@@ -70,6 +68,7 @@ def authenticate_user(db: Session, email: str, password: str) -> Optional[models
     user = get_user_by_email(db, email)
     if not user:
         return None
-    if not pwd_context.verify(password, user.PasswordHash):
+    hashed_password = hashlib.sha256(password.encode('utf-8')).hexdigest()
+    if hashed_password != user.PasswordHash:
         return None
     return user

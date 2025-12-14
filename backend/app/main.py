@@ -15,7 +15,7 @@ app = FastAPI(
 security = HTTPBearer()
 
 # Подключаем роутеры
-app.include_router(auth.router, prefix="/api", tags=["auth"])
+app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(users.router, prefix="/api", tags=["users"])
 app.include_router(projects.router, prefix="/api", tags=["projects"])
 app.include_router(tasks.router, prefix="/api", tags=["tasks"])

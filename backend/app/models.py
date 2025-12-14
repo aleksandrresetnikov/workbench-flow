@@ -12,14 +12,15 @@ class ProjectRole(str, enum.Enum):
 
 class User(Base):
     __tablename__ = 'Users'
-    
+
     Id = Column('Id', Integer, primary_key=True, index=True)
     Username = Column('Username', String(50), nullable=False, index=True)
     Email = Column('Email', String(75), nullable=False, index=True)
     PasswordHash = Column('PasswordHash', String(125), nullable=False)
     CreateDate = Column('CreateDate', DateTime(timezone=True), server_default=func.now(), nullable=False)
     IsDeleted = Column('IsDeleted', Boolean, default=False, nullable=False)
-    
+    OtpId = Column('OtpId', Integer, ForeignKey('Otps.Id'), nullable=True)
+
     # Relationships
     projects_owned = relationship("Project", back_populates="owner", foreign_keys="Project.OwnerId")
     store_files = relationship("StoreFile", back_populates="author")
@@ -28,6 +29,18 @@ class User(Base):
     comments = relationship("Comment", back_populates="author")
     project_memberships = relationship("ProjectMember", back_populates="member")
     pins = relationship("Pin", back_populates="user")
+    otp = relationship("Otp", back_populates="user")
+
+class Otp(Base):
+    __tablename__ = 'Otps'
+
+    Id = Column('Id', Integer, primary_key=True, index=True)
+    Code = Column('Code', String(6), nullable=False)
+    CreateDate = Column('CreateDate', DateTime(timezone=True), server_default=func.now(), nullable=False)
+    Attempts = Column('Attempts', Integer, default=5, nullable=False)
+
+    # Relationships
+    user = relationship("User", back_populates="otp")
 
 class StoreFile(Base):
     __tablename__ = 'StoreFiles'
