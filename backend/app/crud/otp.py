@@ -3,20 +3,25 @@ from typing import Optional
 from app import models, schemas
 import random
 import string
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from sqlalchemy import func
+
 
 def generate_otp_code() -> str:
     """Generate a 6-digit OTP code"""
     return ''.join(random.choices(string.digits, k=6))
 
+
 def get_otp_by_id(db: Session, otp_id: int) -> Optional[models.Otp]:
     return db.query(models.Otp).filter(models.Otp.Id == otp_id).first()
+
 
 def get_otp_by_user_email(db: Session, email: str) -> Optional[models.Otp]:
     user = db.query(models.User).filter(models.User.Email == email).first()
     if user and user.OtpId:
         return get_otp_by_id(db, user.OtpId)
     return None
+
 
 def create_otp(db: Session, user: models.User) -> models.Otp:
     """Create a new OTP for the user"""
@@ -41,6 +46,7 @@ def create_otp(db: Session, user: models.User) -> models.Otp:
 
     return db_otp
 
+
 def verify_otp(db: Session, email: str, code: str) -> tuple[bool, str]:
     """
     Verify OTP code.
@@ -50,8 +56,19 @@ def verify_otp(db: Session, email: str, code: str) -> tuple[bool, str]:
     if not otp:
         return False, "OTP not found"
 
+    # Получаем текущее время в UTC (aware datetime)
+    now_utc = datetime.now(timezone.utc)
+
+    # Преобразуем otp.CreateDate в UTC если он aware, или используем как есть если naive
+    if otp.CreateDate.tzinfo is not None:
+        # Если уже aware, конвертируем в UTC
+        otp_time = otp.CreateDate.astimezone(timezone.utc)
+    else:
+        # Если naive, предполагаем что это UTC
+        otp_time = otp.CreateDate.replace(tzinfo=timezone.utc)
+
     # Check if OTP is expired (2 minutes)
-    if datetime.utcnow() - otp.CreateDate > timedelta(minutes=2):
+    if now_utc - otp_time > timedelta(minutes=2):
         return False, "OTP expired"
 
     # Check attempts
@@ -72,6 +89,7 @@ def verify_otp(db: Session, email: str, code: str) -> tuple[bool, str]:
 
     return True, "OTP verified successfully"
 
+
 def can_resend_otp(db: Session, email: str) -> tuple[bool, str]:
     """
     Check if OTP can be resent (30 seconds cooldown).
@@ -81,7 +99,16 @@ def can_resend_otp(db: Session, email: str) -> tuple[bool, str]:
     if not otp:
         return True, "No existing OTP"
 
-    time_since_creation = datetime.utcnow() - otp.CreateDate
+    # Получаем текущее время в UTC
+    now_utc = datetime.now(timezone.utc)
+
+    # Преобразуем otp.CreateDate
+    if otp.CreateDate.tzinfo is not None:
+        otp_time = otp.CreateDate.astimezone(timezone.utc)
+    else:
+        otp_time = otp.CreateDate.replace(tzinfo=timezone.utc)
+
+    time_since_creation = now_utc - otp_time
     if time_since_creation < timedelta(seconds=30):
         remaining_seconds = 30 - int(time_since_creation.total_seconds())
         return False, f"Please wait {remaining_seconds} seconds before resending"
