@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy.util import await_only
+
 from app import schemas, models
 from app.database import get_db
 from app.auth import authenticate_user, create_access_token, get_current_active_user
-from app.crud.user import get_user_by_email, create_user
+from app.crud.user import get_user_by_email, create_user, delete_user
 from app.crud.otp import create_otp, verify_otp, can_resend_otp
 from app.email_utils import send_otp_email
 from datetime import timedelta
@@ -27,6 +29,8 @@ async def register_user(user_data: schemas.UserCreate, db: Session = Depends(get
     # Send OTP email asynchronously
     email_sent = await send_otp_email(user.Email, otp.Code)
     if not email_sent:
+        print(delete_user(db, user_id=user.Id))
+        print(user.Id)
         raise HTTPException(status_code=500, detail="Failed to send OTP email")
 
     return {"message": "User registered successfully. Please check your email for OTP code"}

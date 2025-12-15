@@ -64,6 +64,15 @@ def delete_user(db: Session, user_id: int) -> bool:
     db.commit()
     return True
 
+def delete_user_permanent(db: Session, user_id: int) -> bool:
+    db_user = get_user(db, user_id)
+    if not db_user:
+        return False
+
+    db.delete(db_user)
+    db.commit()
+    return True
+
 def authenticate_user(db: Session, email: str, password: str) -> Optional[models.User]:
     user = get_user_by_email(db, email)
     if not user:
