@@ -4,11 +4,13 @@ from typing import List
 
 from app.crud.project import get_user_projects, get_project, create_project, update_project, get_projects
 from app.crud.project_member import get_project_members, add_project_member, update_project_member_role, remove_project_member, get_project_member
-from app.crud.user import get_user_by_id
+from app.crud.user import get_user
 from app.database import get_db
 
 from app.auth import get_current_active_user, check_project_access, check_project_admin_access
-from fastapi import APIRouter
+from app import schemas, models
+
+router = APIRouter()
 
 router = APIRouter()
 
@@ -92,7 +94,7 @@ async def add_project_member_endpoint(
         )
     
     # Check if the user to add exists
-    user_to_add = get_user_by_id(db, member_data.MemnerId)
+    user_to_add = get_user(db, member_data.MemnerId)
     if not user_to_add:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

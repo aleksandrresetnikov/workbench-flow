@@ -16,9 +16,9 @@ security = HTTPBearer()
 
 # Подключаем роутеры
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
-app.include_router(users.router, prefix="/api", tags=["users"])
-app.include_router(projects.router, prefix="/api", tags=["projects"])
-app.include_router(tasks.router, prefix="/api", tags=["tasks"])
+app.include_router(users.router, prefix="/api/users", tags=["users"])
+app.include_router(projects.router, prefix="/api/projects", tags=["projects"])
+app.include_router(tasks.router, prefix="/api/tasks", tags=["tasks"])
 
 @app.get("/")
 def read_root():
