@@ -1,6 +1,8 @@
 from sqlalchemy.orm import Session
 from typing import Optional, List
-from app import models, schemas
+from app import models
+from app.schemas.tasks import TaskStateCreate
+
 
 def get_task_state(db: Session, state_id: int) -> Optional[models.TaskState]:
     return db.query(models.TaskState).filter(models.TaskState.Id == state_id).first()
@@ -8,7 +10,7 @@ def get_task_state(db: Session, state_id: int) -> Optional[models.TaskState]:
 def get_task_states(db: Session) -> List[models.TaskState]:
     return db.query(models.TaskState).all()
 
-def create_task_state(db: Session, state: schemas.TaskStateCreate) -> models.TaskState:
+def create_task_state(db: Session, state: TaskStateCreate) -> models.TaskState:
     db_state = models.TaskState(**state.model_dump())
     db.add(db_state)
     db.commit()

@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from typing import Optional, List
-from app import models, schemas
+from app import models
 
 def get_task_file(db: Session, task_id: int, file_id: int) -> Optional[models.TaskFile]:
     return db.query(models.TaskFile).filter(

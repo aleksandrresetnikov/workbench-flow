@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy.util import await_only
 
 from app import schemas, models
+from app.schemas import users, otps
 from app.database import get_db
 from app.auth import authenticate_user, create_access_token, get_current_active_user
 from app.crud.user import get_user_by_email, create_user, delete_user_permanent
@@ -13,7 +13,7 @@ from datetime import timedelta
 router = APIRouter()
 
 @router.post("/register")
-async def register_user(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
+async def register_user(user_data: users.UserCreate, db: Session = Depends(get_db)):
     """Register a new user and send OTP"""
     # Check if user already exists
     existing_user = get_user_by_email(db, user_data.Email)
@@ -36,7 +36,7 @@ async def register_user(user_data: schemas.UserCreate, db: Session = Depends(get
     return {"message": "User registered successfully. Please check your email for OTP code"}
 
 @router.patch("/confirm-otp")
-async def confirm_otp(otp_data: schemas.OtpConfirm, db: Session = Depends(get_db)):
+async def confirm_otp(otp_data: otps.OtpConfirm, db: Session = Depends(get_db)):
     """Confirm OTP code"""
     success, message = verify_otp(db, otp_data.email, otp_data.code)
     if not success:
@@ -45,7 +45,7 @@ async def confirm_otp(otp_data: schemas.OtpConfirm, db: Session = Depends(get_db
     return {"message": message}
 
 @router.post("/again-otp")
-async def resend_otp(resend_data: schemas.OtpResend, db: Session = Depends(get_db)):
+async def resend_otp(resend_data: otps.OtpResend, db: Session = Depends(get_db)):
     """Resend OTP code"""
     can_resend, message = can_resend_otp(db, resend_data.email)
     if not can_resend:
@@ -66,8 +66,8 @@ async def resend_otp(resend_data: schemas.OtpResend, db: Session = Depends(get_d
 
     return {"message": "OTP code sent successfully"}
 
-@router.post("/login", response_model=schemas.Token)
-async def login_for_access_token(form_data: schemas.UserLogin, db: Session = Depends(get_db)):
+@router.post("/login", response_model=users.Token)
+async def login_for_access_token(form_data: users.UserLogin, db: Session = Depends(get_db)):
     user = authenticate_user(db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(
@@ -89,7 +89,7 @@ async def login_for_access_token(form_data: schemas.UserLogin, db: Session = Dep
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
-@router.get("/fetch", response_model=schemas.User)
+@router.get("/fetch", response_model=users.User)
 async def fetch_current_user(current_user: models.User = Depends(get_current_active_user)):
     # Check if user is confirmed
     if current_user.OtpId is not None:

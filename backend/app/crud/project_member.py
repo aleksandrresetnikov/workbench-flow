@@ -1,6 +1,8 @@
 from sqlalchemy.orm import Session
 from typing import Optional, List
 from app import models, schemas
+from app.schemas.project import ProjectRole
+
 
 def get_project_member(db: Session, project_id: int, member_id: int) -> Optional[models.ProjectMember]:
     return db.query(models.ProjectMember).filter(
@@ -13,7 +15,7 @@ def get_project_members(db: Session, project_id: int) -> List[models.ProjectMemb
         models.ProjectMember.ProjectId == project_id
     ).all()
 
-def add_project_member(db: Session, project_id: int, member_id: int, role: schemas.ProjectRole = schemas.ProjectRole.COMMON) -> models.ProjectMember:
+def add_project_member(db: Session, project_id: int, member_id: int, role: ProjectRole = ProjectRole.COMMON) -> models.ProjectMember:
     db_member = models.ProjectMember(
         ProjectId=project_id,
         MemnerId=member_id,
@@ -24,7 +26,7 @@ def add_project_member(db: Session, project_id: int, member_id: int, role: schem
     db.refresh(db_member)
     return db_member
 
-def update_project_member_role(db: Session, project_id: int, member_id: int, role: schemas.ProjectRole) -> Optional[models.ProjectMember]:
+def update_project_member_role(db: Session, project_id: int, member_id: int, role: ProjectRole) -> Optional[models.ProjectMember]:
     db_member = get_project_member(db, project_id, member_id)
     if not db_member:
         return None

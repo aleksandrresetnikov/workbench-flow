@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from typing import Optional, List
-from app import models, schemas
+from app import models
 
 def get_pin(db: Session, user_id: int, task_id: int) -> Optional[models.Pin]:
     return db.query(models.Pin).filter(

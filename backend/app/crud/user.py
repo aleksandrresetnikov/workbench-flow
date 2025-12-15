@@ -1,7 +1,9 @@
 from sqlalchemy.orm import Session
 from typing import Optional, List
 import hashlib
-from app import models, schemas
+from app import models
+from app.schemas.users import UserCreate, UserUpdate
+
 
 def get_user(db: Session, user_id: int) -> Optional[models.User]:
     return db.query(models.User).filter(
@@ -26,7 +28,7 @@ def get_users(db: Session, skip: int = 0, limit: int = 100) -> List[models.User]
         models.User.IsDeleted == False
     ).offset(skip).limit(limit).all()
 
-def create_user(db: Session, user: schemas.UserCreate) -> models.User:
+def create_user(db: Session, user: UserCreate) -> models.User:
     hashed_password = hashlib.sha256(user.Password.encode('utf-8')).hexdigest()
     db_user = models.User(
         Username=user.Username,
@@ -38,19 +40,19 @@ def create_user(db: Session, user: schemas.UserCreate) -> models.User:
     db.refresh(db_user)
     return db_user
 
-def update_user(db: Session, user_id: int, user_update: schemas.UserUpdate) -> Optional[models.User]:
+def update_user(db: Session, user_id: int, user_update: UserUpdate) -> Optional[models.User]:
     db_user = get_user(db, user_id)
     if not db_user:
         return None
-    
+
     update_data = user_update.model_dump(exclude_unset=True)
-    
+
     if 'Password' in update_data:
         update_data['PasswordHash'] = hashlib.sha256(update_data.pop('Password').encode('utf-8')).hexdigest()
-    
+
     for field, value in update_data.items():
         setattr(db_user, field, value)
-    
+
     db.commit()
     db.refresh(db_user)
     return db_user
@@ -59,7 +61,7 @@ def delete_user(db: Session, user_id: int) -> bool:
     db_user = get_user(db, user_id)
     if not db_user:
         return False
-    
+
     db_user.IsDeleted = True
     db.commit()
     return True

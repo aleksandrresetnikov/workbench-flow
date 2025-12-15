@@ -1,6 +1,8 @@
 from sqlalchemy.orm import Session
 from typing import Optional, List
-from app import models, schemas
+from app import models
+from app.schemas.tasks import TaskGroupCreate
+
 
 def get_task_group(db: Session, group_id: int) -> Optional[models.TaskGroup]:
     return db.query(models.TaskGroup).filter(models.TaskGroup.Id == group_id).first()
@@ -10,7 +12,7 @@ def get_project_task_groups(db: Session, project_id: int) -> List[models.TaskGro
         models.TaskGroup.ProjectId == project_id
     ).all()
 
-def create_task_group(db: Session, group: schemas.TaskGroupCreate) -> models.TaskGroup:
+def create_task_group(db: Session, group: TaskGroupCreate) -> models.TaskGroup:
     db_group = models.TaskGroup(**group.model_dump())
     db.add(db_group)
     db.commit()

@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from typing import Optional
-from app import models, schemas
+from app import models
 import random
 import string
 from datetime import datetime, timedelta, timezone

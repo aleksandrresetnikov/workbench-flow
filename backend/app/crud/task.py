@@ -1,7 +1,9 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from typing import Optional, List
-from app import models, schemas
+from app import models
+from app.schemas.tasks import TaskCreate, TaskUpdate
+
 
 def get_task(db: Session, task_id: int) -> Optional[models.Task]:
     return db.query(models.Task).filter(models.Task.Id == task_id).first()
@@ -33,14 +35,14 @@ def get_project_tasks(db: Session, project_id: int, closed: Optional[bool] = Non
     
     return query.all()
 
-def create_task(db: Session, task: schemas.TaskCreate, author_id: int) -> models.Task:
+def create_task(db: Session, task: TaskCreate, author_id: int) -> models.Task:
     db_task = models.Task(**task.model_dump(), AuthorId=author_id)
     db.add(db_task)
     db.commit()
     db.refresh(db_task)
     return db_task
 
-def update_task(db: Session, task_id: int, task_update: schemas.TaskUpdate) -> Optional[models.Task]:
+def update_task(db: Session, task_id: int, task_update: TaskUpdate) -> Optional[models.Task]:
     db_task = get_task(db, task_id)
     if not db_task:
         return None

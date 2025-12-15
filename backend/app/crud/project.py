@@ -1,8 +1,10 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_
 from typing import Optional, List
-from app import models, schemas
+from app import models
 from .project_member import add_project_member
+from ..schemas.project import ProjectCreate, ProjectRole, ProjectUpdate
+
 
 def get_project(db: Session, project_id: int) -> Optional[models.Project]:
     return db.query(models.Project).filter(
@@ -27,18 +29,18 @@ def get_user_projects(db: Session, user_id: int) -> List[models.Project]:
         )
     ).distinct().all()
 
-def create_project(db: Session, project: schemas.ProjectCreate, owner_id: int) -> models.Project:
+def create_project(db: Session, project: ProjectCreate, owner_id: int) -> models.Project:
     db_project = models.Project(**project.model_dump(), OwnerId=owner_id)
     db.add(db_project)
     db.commit()
     db.refresh(db_project)
     
     # Автоматически добавляем владельца как админа проекта
-    add_project_member(db, db_project.Id, owner_id, schemas.ProjectRole.ADMIN)
+    add_project_member(db, db_project.Id, owner_id, ProjectRole.ADMIN)
     
     return db_project
 
-def update_project(db: Session, project_id: int, project_update: schemas.ProjectUpdate) -> Optional[models.Project]:
+def update_project(db: Session, project_id: int, project_update: ProjectUpdate) -> Optional[models.Project]:
     db_project = get_project(db, project_id)
     if not db_project:
         return None

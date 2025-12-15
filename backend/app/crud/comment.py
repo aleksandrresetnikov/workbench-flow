@@ -1,6 +1,8 @@
 from sqlalchemy.orm import Session
 from typing import Optional, List
 from app import models, schemas
+from app.schemas.comments import CommentCreate
+
 
 def get_comment(db: Session, comment_id: int) -> Optional[models.Comment]:
     return db.query(models.Comment).filter(models.Comment.Id == comment_id).first()
@@ -10,7 +12,7 @@ def get_task_comments(db: Session, task_id: int) -> List[models.Comment]:
         models.Comment.TaskId == task_id
     ).order_by(models.Comment.CreateDate).all()
 
-def create_comment(db: Session, comment: schemas.CommentCreate, author_id: int) -> models.Comment:
+def create_comment(db: Session, comment: CommentCreate, author_id: int) -> models.Comment:
     db_comment = models.Comment(**comment.model_dump(), AuthorId=author_id)
     db.add(db_comment)
     db.commit()
