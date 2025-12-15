@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.security import HTTPBearer
 from app.database import engine, Base
-from app.api.endpoints import auth, users, projects, tasks, task_groups
+from app.api.endpoints import auth, users, projects, tasks, task_groups, store_files
 
 # Создаем таблицы в БД
 Base.metadata.create_all(bind=engine)
@@ -19,7 +19,8 @@ app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(projects.router, prefix="/api/projects", tags=["projects"])
 app.include_router(tasks.router, prefix="/api/tasks", tags=["tasks"])
-app.include_router(task_groups.router, prefix="/task_groups/api", tags=["task_groups"])
+app.include_router(task_groups.router, prefix="/api", tags=["task_groups"])
+app.include_router(store_files.router, prefix="/api", tags=["store_files"])
 
 @app.get("/")
 def read_root():

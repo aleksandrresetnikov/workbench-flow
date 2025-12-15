@@ -9,3 +9,4 @@ python-jose[cryptography]==3.3.0
 alembic==1.12.1
 psycopg2-binary==2.9.9
 resend
+python-multipart
