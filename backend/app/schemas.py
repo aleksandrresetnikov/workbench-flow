@@ -127,8 +127,8 @@ class TaskGroupBase(BaseModel):
     Name: str
     ProjectId: int
 
-class TaskGroupCreate(TaskGroupBase):
-    pass
+class TaskGroupCreate(BaseModel):
+    Name: str
 
 class TaskGroup(TaskGroupBase):
     Id: int
