@@ -31,8 +31,8 @@ class UserDTO(BaseModel):
     Email: str
     FirstName: Optional[str] = None
     LastName: Optional[str] = None
-    IsActive: bool
-    CreatedAt: datetime
+    IsActive: Optional[bool] = None
+    CreatedAt: Optional[datetime] = None
 
 # ========== User DTOs ==========
 class UserUpdateDTO(BaseModel):

@@ -5,10 +5,8 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushBu
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont
 
-# Color constants
-PRIMARY_COLOR = "#1D3755"
-WHITE_COLOR = "#FFFFFF"
-MUTED_COLOR = "#D1E9FF"
+# Import color constants from centralized styles
+from ui.styles.colors import PRIMARY, WHITE, MUTED
 
 class MainScreen(QWidget):
     """Main screen showing user information and logout button"""
@@ -28,44 +26,25 @@ class MainScreen(QWidget):
 
         # Card frame
         card = QFrame()
+        card.setObjectName("MainCard")
         card.setFixedSize(400, 300)
-        card.setStyleSheet(f"""
-            background-color: {PRIMARY_COLOR};
-            border-radius: 15px;
-            padding: 20px;
-        """)
         card_layout = QVBoxLayout(card)
         card_layout.setAlignment(Qt.AlignCenter)
         card_layout.setSpacing(20)
 
         # Header
         header = QLabel("Welcome to the Application")
-        header.setStyleSheet(f"""
-            color: {WHITE_COLOR};
-            font-size: 24px;
-            font-weight: bold;
-        """)
+        header.setObjectName("HeaderLabel")
         card_layout.addWidget(header)
 
         # User info
         user_label = QLabel(f"Logged in as: {self.username}")
-        user_label.setStyleSheet(f"""
-            color: {WHITE_COLOR};
-            font-size: 18px;
-        """)
+        user_label.setObjectName("UserLabel")
         card_layout.addWidget(user_label)
 
         # Logout button
         logout_button = QPushButton("Logout")
-        logout_button.setStyleSheet(f"""
-            background-color: {WHITE_COLOR};
-            color: {PRIMARY_COLOR};
-            border: none;
-            border-radius: 8px;
-            padding: 12px;
-            font-size: 16px;
-            font-weight: bold;
-        """)
+        logout_button.setObjectName("PrimaryButton")
         logout_button.setFixedHeight(50)
         logout_button.clicked.connect(self.handle_logout)
         card_layout.addWidget(logout_button)

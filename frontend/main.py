@@ -96,8 +96,12 @@ class AuthApp(QMainWindow):
             if self.auth_service.fetch_current_user():
                 self.show_main_screen()
             else:
+                error_msg = "Failed to fetch user information. Please try again."
+                self.login_screen.show_error(error_msg)
                 print("Failed to fetch user after login")
         else:
+            error_msg = "Invalid username or password. Please try again."
+            self.login_screen.show_error(error_msg)
             print("Login failed")
 
     def handle_registration(self):
@@ -140,6 +144,14 @@ class AuthApp(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    
+    # Load and apply global theme
+    try:
+        with open("ui/styles/theme.qss", "r") as f:
+            app.setStyleSheet(f.read())
+    except FileNotFoundError:
+        print("Warning: Could not load theme.qss file")
+    
     window = AuthApp()
     window.show()
     sys.exit(app.exec())
