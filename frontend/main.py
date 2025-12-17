@@ -3,11 +3,41 @@
 
 import sys
 from PySide6.QtWidgets import QApplication, QMainWindow, QStackedWidget
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import QTimer, QThread, Signal
 
 from services import auth_service
+from ui.components import LoadingOverlay
+from ui.project_screen import ProjectScreen
 from ui.auth_screens import LoginScreen, RegistrationScreen, OTPConfirmationScreen
 from ui.main_screen import MainScreen
+
+class LoginWorker(QThread):
+    """Фоновый поток для выполнения логина и загрузки профиля пользователя."""
+
+    finished_with_result = Signal(bool, str)
+
+    def __init__(self, auth_service, email: str, password: str):
+        super().__init__()
+        self._auth_service = auth_service
+        self._email = email
+        self._password = password
+
+    def run(self):
+        try:
+            if not self._auth_service.login(self._email, self._password):
+                self.finished_with_result.emit(False, "Неверный email или пароль. Попробуйте снова.")
+                return
+
+            if not self._auth_service.fetch_current_user():
+                self.finished_with_result.emit(
+                    False, "Не удалось получить информацию о пользователе. Попробуйте снова."
+                )
+                return
+
+            self.finished_with_result.emit(True, "")
+        except Exception as exc:  # на всякий случай
+            self.finished_with_result.emit(False, str(exc))
+
 
 class AuthApp(QMainWindow):
     def __init__(self):
@@ -33,6 +63,11 @@ class AuthApp(QMainWindow):
         self.login_screen = LoginScreen()
         self.registration_screen = RegistrationScreen()
         self.main_screen = None
+        self.project_screen = None
+        self._login_worker: LoginWorker | None = None
+
+        # Loading overlay for auth operations
+        self.loading_overlay = LoadingOverlay(self, "Входим в аккаунт")
 
         # Add screens to stacked widget
         self.stacked_widget.addWidget(self.login_screen)
@@ -81,27 +116,50 @@ class AuthApp(QMainWindow):
         if self.auth_service.current_user:
             self.main_screen = MainScreen(self.auth_service)
             self.main_screen.logout_requested.connect(self.handle_logout)
+            self.main_screen.project_open_requested.connect(self.open_project)
 
             # Add main screen to stacked widget
             self.stacked_widget.addWidget(self.main_screen)
+            self.stacked_widget.setCurrentWidget(self.main_screen)
+
+    def open_project(self, project):
+        """Open selected project screen."""
+        self.project_screen = ProjectScreen(project, self.auth_service)
+        self.project_screen.back_requested.connect(self._close_project_screen)
+        self.stacked_widget.addWidget(self.project_screen)
+        self.stacked_widget.setCurrentWidget(self.project_screen)
+
+    def _close_project_screen(self):
+        """Return from project screen back to main screen."""
+        if self.project_screen is not None:
             self.stacked_widget.setCurrentWidget(self.main_screen)
 
     def handle_login(self):
         """Handle login attempt"""
         email = self.login_screen.email_input.text()
         password = self.login_screen.password_input.text()
-        
-        if self.auth_service.login(email, password):
-            if self.auth_service.fetch_current_user():
-                self.show_main_screen()
-            else:
-                error_msg = "Не удалось получить информацию о пользователе. Попробуйте снова."
-                self.login_screen.show_error(error_msg)
-                print("Failed to fetch user after login")
+
+        self.login_screen.clear_error()
+        # Показать оверлей и запустить фоновый поток
+        self.loading_overlay.show()
+
+        # Остановить предыдущий поток, если он ещё работает
+        if self._login_worker is not None and self._login_worker.isRunning():
+            self._login_worker.terminate()
+
+        self._login_worker = LoginWorker(self.auth_service, email, password)
+        self._login_worker.finished_with_result.connect(self._on_login_finished)
+        self._login_worker.finished.connect(self.loading_overlay.hide)
+        self._login_worker.start()
+
+    def _on_login_finished(self, success: bool, message: str):
+        """Handle login result from background worker."""
+        if success:
+            self.show_main_screen()
         else:
-            error_msg = "Неверный email или пароль. Попробуйте снова."
-            self.login_screen.show_error(error_msg)
-            print("Login failed")
+            if message:
+                self.login_screen.show_error(message)
+            print("Login failed:", message)
 
     def handle_registration(self):
         """Handle registration attempt"""

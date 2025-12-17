@@ -6,6 +6,7 @@ from .inputs import PasswordInput, OTPInput
 from .cards import AuthCard, ModalCard
 from .labels import TitleLabel, FieldLabel, DescriptionLabel, LinkLabel
 from .dropdown import UserDropdown
+from .loading import LoadingOverlay
 
 __all__ = [
     'PrimaryButton',
@@ -21,5 +22,5 @@ __all__ = [
     'DescriptionLabel',
     'LinkLabel',
     'UserDropdown',
+    'LoadingOverlay',
 ]
-

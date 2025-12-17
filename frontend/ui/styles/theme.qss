@@ -355,3 +355,80 @@ QPushButton#DropdownButton {
 QPushButton#DropdownButton:hover {
     background-color: #F5F5F5;
 }
+
+/* Loading overlay */
+QWidget#LoadingOverlay {
+    background-color: rgba(0, 0, 0, 0.35);
+}
+
+QLabel#LoadingLabel {
+    color: #FFFFFF;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+/* Project screen header */
+QWidget#ProjectHeader {
+    background-color: #1D3755;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+QLabel#ProjectTitle {
+    color: #FFFFFF;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+QLabel#TasksCounter {
+    color: #D1E9FF;
+    font-size: 14px;
+}
+
+QPushButton#BackButton {
+    background-color: transparent;
+    border: none;
+    color: #FFFFFF;
+    font-size: 18px;
+}
+
+QPushButton#BackButton:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+}
+
+/* Kanban board */
+QWidget#KanbanColumn {
+    background-color: #F4F6F8;
+    border-radius: 8px;
+}
+
+QWidget#KanbanColumnHeader {
+    background-color: transparent;
+}
+
+QLabel#KanbanColumnTitle {
+    color: #000000;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+QLabel#KanbanColumnCounter {
+    color: #666666;
+    font-size: 12px;
+}
+
+QFrame#KanbanCard {
+    background-color: #FFFFFF;
+    border-radius: 8px;
+}
+
+QLabel#KanbanCardTitle {
+    color: #000000;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+QLabel#KanbanCardDescription {
+    color: #666666;
+    font-size: 12px;
+}

@@ -6,13 +6,13 @@ from PySide6.QtWidgets import (
     QTableWidget, QTableWidgetItem, QHeaderView, QDialog, 
     QLineEdit, QTextEdit, QDateEdit, QMessageBox, QFrame
 )
-from PySide6.QtCore import Qt, Signal, QPoint
+from PySide6.QtCore import Qt, Signal, QPoint, QThread
 from PySide6.QtGui import QPixmap, QFont, QMouseEvent
 
 from services.auth_service import AuthService
 from api.projects import projects_api
 from api.dtos import ProjectCreateDTO, ProjectDTO
-from ui.components import CreateProjectButton, PrimaryButton, FieldLabel, ModalCard, UserDropdown
+from ui.components import CreateProjectButton, PrimaryButton, FieldLabel, ModalCard, UserDropdown, LoadingOverlay
 
 def translate_role(role: str, is_owner: bool = False) -> str:
     """Translate role to Russian"""
@@ -26,13 +26,37 @@ def translate_role(role: str, is_owner: bool = False) -> str:
     }
     return role_map.get(role, role)
 
+class ProjectsLoadWorker(QThread):
+    """Фоновая загрузка списка проектов пользователя."""
+
+    projects_loaded = Signal(list)
+    error = Signal(str)
+
+    def __init__(self, auth_service: AuthService):
+        super().__init__()
+        self._auth_service = auth_service
+
+    def run(self):
+        try:
+            token = self._auth_service.token
+            if not token:
+                raise RuntimeError("Отсутствует токен авторизации")
+            projects = projects_api.get_my_projects(token)
+            self.projects_loaded.emit(projects)
+        except Exception as e:
+            self.error.emit(str(e))
+
+
 class MainScreen(QWidget):
     """Main screen displaying projects list with header and create functionality"""
     logout_requested = Signal()
+    project_open_requested = Signal(ProjectDTO)
 
     def __init__(self, auth_service: AuthService):
         super().__init__()
         self.auth_service = auth_service
+        self._projects: list[ProjectDTO] = []
+        self._load_worker: ProjectsLoadWorker | None = None
         self.setup_ui()
         self.load_projects()
 
@@ -49,6 +73,10 @@ class MainScreen(QWidget):
         # Projects table
         self.table = self.create_projects_table()
         self.layout.addWidget(self.table)
+
+        # Loading overlay
+        self.loading_overlay = LoadingOverlay(self, "Загружаем проекты")
+        self.loading_overlay.hide()
 
     def create_header(self) -> QWidget:
         """Create the top header with title, user info, and create button"""
@@ -134,6 +162,7 @@ class MainScreen(QWidget):
         table.setEditTriggers(QTableWidget.NoEditTriggers)
         table.setObjectName("ProjectsTable")
         table.verticalHeader().setDefaultSectionSize(60)
+        table.cellDoubleClicked.connect(self._on_row_double_clicked)
         
         # Set column widths
         header = table.horizontalHeader()
@@ -151,69 +180,88 @@ class MainScreen(QWidget):
 
     def load_projects(self):
         """Load and display user's projects"""
-        try:
-            projects = projects_api.get_my_projects(self.auth_service.token)
-            self.table.setRowCount(len(projects))
+        # Показать оверлей и запустить фоновую загрузку
+        self.loading_overlay.show()
+        self.table.setRowCount(0)
 
-            for i, project in enumerate(projects):
-                # Index
-                index_item = QTableWidgetItem(str(i + 1))
-                index_item.setTextAlignment(Qt.AlignCenter)
-                self.table.setItem(i, 0, index_item)
+        if self._load_worker is not None and self._load_worker.isRunning():
+            self._load_worker.terminate()
 
-                # Project Name with ID
-                name_widget = QWidget()
-                name_widget.setStyleSheet("background-color: transparent;")
-                name_layout = QVBoxLayout(name_widget)
-                name_layout.setContentsMargins(8, 4, 8, 4)
-                name_layout.setSpacing(2)
-                
-                name_label = QLabel(project.Name)
-                name_label.setStyleSheet("background-color: transparent; font-weight: bold; color: #000000;")
-                name_layout.addWidget(name_label)
-                
-                id_label = QLabel(str(project.Id))
-                id_label.setStyleSheet("background-color: transparent; font-size: 12px; color: #666666;")
-                name_layout.addWidget(id_label)
-                
-                self.table.setCellWidget(i, 1, name_widget)
+        self._load_worker = ProjectsLoadWorker(self.auth_service)
+        self._load_worker.projects_loaded.connect(self._on_projects_loaded)
+        self._load_worker.error.connect(self._on_projects_error)
+        self._load_worker.finished.connect(self.loading_overlay.hide)
+        self._load_worker.start()
 
-                # Description
-                desc = project.Description or "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla..."
-                desc_item = QTableWidgetItem(desc)
-                desc_item.setToolTip(desc)
-                self.table.setItem(i, 2, desc_item)
+    def _on_projects_loaded(self, projects: list[ProjectDTO]):
+        self._projects = projects
+        self.table.setRowCount(len(self._projects))
 
-                # Role and Participants
-                try:
-                    members = projects_api.get_project_members(project.Id, self.auth_service.token)
-                    user_member = next((m for m in members if m.MemnerId == self.auth_service.current_user.Id), None)
-                    is_owner = project.OwnerId == self.auth_service.current_user.Id
-                    role = translate_role(user_member.Role if user_member else "Common", is_owner)
-                    participants = len(members)
-                except Exception as e:
-                    print(f"Error fetching members for project {project.Id}: {e}")
-                    role = "Участник"
-                    participants = 0
-                    is_owner = False
+        for i, project in enumerate(self._projects):
+            # Index
+            index_item = QTableWidgetItem(str(i + 1))
+            index_item.setTextAlignment(Qt.AlignCenter)
+            self.table.setItem(i, 0, index_item)
 
-                # Role badge
-                role_button = QPushButton(role)
-                role_button.setObjectName("RoleBadge")
-                role_button.setEnabled(False)
-                role_button.setCursor(Qt.ArrowCursor)
-                # Allow text to wrap or use elided text if needed
-                role_button.setText(role)
-                self.table.setCellWidget(i, 3, role_button)
+            # Project Name with ID
+            name_widget = QWidget()
+            name_widget.setStyleSheet("background-color: transparent;")
+            name_layout = QVBoxLayout(name_widget)
+            name_layout.setContentsMargins(8, 4, 8, 4)
+            name_layout.setSpacing(2)
 
-                # Participants
-                participants_item = QTableWidgetItem(str(participants))
-                participants_item.setTextAlignment(Qt.AlignCenter)
-                self.table.setItem(i, 4, participants_item)
+            name_label = QLabel(project.Name)
+            name_label.setStyleSheet("background-color: transparent; font-weight: bold; color: #000000;")
+            name_layout.addWidget(name_label)
 
-        except Exception as e:
-            print(f"Error loading projects: {e}")
-            QMessageBox.critical(self, "Ошибка", f"Не удалось загрузить проекты: {e}")
+            id_label = QLabel(str(project.Id))
+            id_label.setStyleSheet("background-color: transparent; font-size: 12px; color: #666666;")
+            name_layout.addWidget(id_label)
+
+            self.table.setCellWidget(i, 1, name_widget)
+
+            # Description
+            desc = project.Description or "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla..."
+            desc_item = QTableWidgetItem(desc)
+            desc_item.setToolTip(desc)
+            self.table.setItem(i, 2, desc_item)
+
+            # Role and Participants
+            try:
+                members = projects_api.get_project_members(project.Id, self.auth_service.token)
+                user_member = next((m for m in members if m.MemnerId == self.auth_service.current_user.Id), None)
+                is_owner = project.OwnerId == self.auth_service.current_user.Id
+                role = translate_role(user_member.Role if user_member else "Common", is_owner)
+                participants = len(members)
+            except Exception as e:
+                print(f"Error fetching members for project {project.Id}: {e}")
+                role = "Участник"
+                participants = 0
+
+            # Role badge
+            role_button = QPushButton(role)
+            role_button.setObjectName("RoleBadge")
+            role_button.setEnabled(False)
+            role_button.setCursor(Qt.ArrowCursor)
+            role_button.setText(role)
+            self.table.setCellWidget(i, 3, role_button)
+
+            # Participants
+            participants_item = QTableWidgetItem(str(participants))
+            participants_item.setTextAlignment(Qt.AlignCenter)
+            self.table.setItem(i, 4, participants_item)
+
+    def _on_projects_error(self, message: str):
+        print(f"Error loading projects: {message}")
+        QMessageBox.critical(self, "Ошибка", f"Не удалось загрузить проекты: {message}")
+
+    def _on_row_double_clicked(self, row: int, column: int):
+        """Open project on double click."""
+        if not hasattr(self, "_projects"):
+            return
+        if 0 <= row < len(self._projects):
+            project = self._projects[row]
+            self.project_open_requested.emit(project)
 
     def show_create_dialog(self):
         """Show the create project dialog"""
