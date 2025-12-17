@@ -133,6 +133,7 @@ class MainScreen(QWidget):
         table.setSelectionBehavior(QTableWidget.SelectRows)
         table.setEditTriggers(QTableWidget.NoEditTriggers)
         table.setObjectName("ProjectsTable")
+        table.verticalHeader().setDefaultSectionSize(60)
         
         # Set column widths
         header = table.horizontalHeader()
