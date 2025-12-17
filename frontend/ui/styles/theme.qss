@@ -145,3 +145,28 @@ QLabel#HeaderLabel {
     font-size: 24px;
     font-weight: bold;
 }
+
+/* Projects Table Styles */
+QTableWidget#ProjectsTable {
+    background-color: #1D3755;
+    color: #FFFFFF;
+    border: none;
+    gridline-color: #D1E9FF;
+}
+
+QTableWidget#ProjectsTable::item {
+    padding: 8px;
+    border-bottom: 1px solid #D1E9FF;
+}
+
+QTableWidget#ProjectsTable::item:selected {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+QHeaderView::section {
+    background-color: #1D3755;
+    color: #FFFFFF;
+    font-weight: bold;
+    border: none;
+    padding: 8px;
+}

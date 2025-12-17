@@ -31,8 +31,8 @@ class UserDTO(BaseModel):
     Email: str
     FirstName: Optional[str] = None
     LastName: Optional[str] = None
-    IsActive: Optional[bool] = None
-    CreatedAt: Optional[datetime] = None
+    CreateDate: Optional[datetime] = None
+    IsDeleted: bool
 
 # ========== User DTOs ==========
 class UserUpdateDTO(BaseModel):
@@ -55,8 +55,10 @@ class ProjectDTO(BaseModel):
     Id: int
     Name: str
     Description: Optional[str] = None
-    OwnerId: int
-    CreatedAt: datetime
+    ProjectLogoId: Optional[int] = None
+    OwnerId: Optional[int] = None
+    CreateDate: datetime
+    IsDeleted: bool
 
 class ProjectWithDetailsDTO(ProjectDTO):
     Owner: UserDTO
@@ -71,12 +73,12 @@ class ProjectMemberBaseDTO(BaseModel):
 class ProjectMemberDTO(BaseModel):
     Id: int
     ProjectId: int
-    UserId: int
+    MemnerId: int
     Role: str
-    CreatedAt: datetime
+    CreateDate: datetime
 
 class ProjectMemberWithUserDTO(ProjectMemberDTO):
-    User: UserDTO
+    member: UserDTO
 
 # ========== Task Group DTOs ==========
 class TaskGroupCreateDTO(BaseModel):

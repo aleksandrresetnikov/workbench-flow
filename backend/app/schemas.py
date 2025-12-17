@@ -23,6 +23,8 @@ class UserUpdate(BaseModel):
 
 class User(UserBase):
     Id: int
+    FirstName: Optional[str] = None
+    LastName: Optional[str] = None
     CreateDate: datetime
     IsDeleted: bool
     OtpId: Optional[int] = None

@@ -79,10 +79,9 @@ class AuthApp(QMainWindow):
     def show_main_screen(self):
         """Show main screen"""
         if self.auth_service.current_user:
-            username = self.auth_service.current_user.Username
-            self.main_screen = MainScreen(username)
+            self.main_screen = MainScreen(self.auth_service)
             self.main_screen.logout_requested.connect(self.handle_logout)
-            
+
             # Add main screen to stacked widget
             self.stacked_widget.addWidget(self.main_screen)
             self.stacked_widget.setCurrentWidget(self.main_screen)
