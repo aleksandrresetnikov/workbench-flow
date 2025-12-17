@@ -1,0 +1,38 @@
+from typing import Optional, Any, List
+from .dtos import *
+import requests
+
+class TasksAPI:
+    """Tasks API client with token per method"""
+    
+    def __init__(self, base_url: str = "http://localhost:8000"):
+        self.base_url = base_url
+    
+    def _make_request(self, method: str, endpoint: str, token: Optional[str] = None, **kwargs) -> Any:
+        """Make an API request with optional token"""
+        url = f"{self.base_url}{endpoint}"
+        headers = {"Content-Type": "application/json"}
+        
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+        
+        try:
+            response = requests.request(method, url, headers=headers, **kwargs)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            print(f"API request failed: {e}")
+            raise
+    
+    def get_tasks(self, project_id: int, token: str) -> List[TaskDTO]:
+        """Get tasks for a project"""
+        response = self._make_request("GET", f"/api/tasks/projects/{project_id}/tasks", token=token)
+        return [TaskDTO(**task) for task in response]
+    
+    def create_task(self, project_id: int, task_data: TaskCreateDTO, token: str) -> TaskDTO:
+        """Create a new task"""
+        response = self._make_request("POST", f"/api/tasks/projects/{project_id}/tasks", token=token, json=task_data.dict())
+        return TaskDTO(**response)
+
+# Singleton instance
+tasks_api = TasksAPI()
