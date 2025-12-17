@@ -1,16 +1,32 @@
 /* Global Theme Stylesheet */
 /* This file contains all visual styling for the application */
 
-/* Color Constants */
-/* PRIMARY = #1D3755 */
-/* WHITE = #FFFFFF */
-/* MUTED = #D1E9FF */
-
-/* Auth Card Styles */
-QFrame#AuthCard {
+/* Main Window - Dark Blue Background */
+QMainWindow {
     background-color: #1D3755;
+}
+
+QWidget {
+    background-color: #1D3755;
+    color: #FFFFFF;
+}
+
+/* All labels have transparent background by default */
+QLabel {
+    background-color: transparent;
+}
+
+/* Auth Card Styles - White Card on Dark Blue Background */
+QFrame#AuthCard {
+    background-color: #FFFFFF;
     border-radius: 15px;
-    padding: 20px;
+    padding: 40px;
+    min-width: 400px;
+}
+
+/* Labels inside AuthCard should have transparent background */
+QFrame#AuthCard QLabel {
+    background-color: transparent;
 }
 
 /* Input Field Styles */
@@ -18,27 +34,35 @@ QLineEdit#InputField {
     background-color: #FFFFFF;
     border: 2px solid #D1E9FF;
     border-radius: 8px;
-    padding: 10px;
+    padding: 12px 16px;
     font-size: 16px;
     color: #000000;
+    min-height: 20px;
 }
 
 QLineEdit#InputField:focus {
-    border: 2px solid #D1E9FF;
+    border: 2px solid #4A90E2;
+    outline: none;
 }
 
-/* Registration Input Field Styles */
-QLineEdit#RegistrationInput {
+QLineEdit#InputField::placeholder {
+    color: #999999;
+}
+
+/* Password Input Field with Eye Icon */
+QLineEdit#PasswordInput {
     background-color: #FFFFFF;
     border: 2px solid #D1E9FF;
     border-radius: 8px;
-    padding: 10px;
+    padding: 12px 45px 12px 16px;
     font-size: 16px;
     color: #000000;
+    min-height: 20px;
 }
 
-QLineEdit#RegistrationInput:focus {
-    border: 2px solid #D1E9FF;
+QLineEdit#PasswordInput:focus {
+    border: 2px solid #4A90E2;
+    outline: none;
 }
 
 /* OTP Input Field Styles */
@@ -47,73 +71,108 @@ QLineEdit#OtpInput {
     border: 2px solid #D1E9FF;
     border-radius: 8px;
     padding: 10px;
-    font-size: 20px;
+    font-size: 24px;
     font-weight: bold;
     color: #000000;
     text-align: center;
+    min-width: 50px;
+    min-height: 60px;
 }
 
 QLineEdit#OtpInput:focus {
-    border: 2px solid #D1E9FF;
+    border: 2px solid #4A90E2;
+    outline: none;
 }
 
-/* Primary Button Styles */
+/* Primary Button Styles - Dark Blue */
 QPushButton#PrimaryButton {
-    background-color: #FFFFFF;
-    color: #1D3755;
+    background-color: #1D3755;
+    color: #FFFFFF;
     border: none;
     border-radius: 8px;
-    padding: 12px;
+    padding: 14px 24px;
     font-size: 16px;
     font-weight: bold;
+    min-height: 20px;
 }
 
 QPushButton#PrimaryButton:hover {
-    background-color: #F0F0F0;
+    background-color: #2A4A6B;
 }
 
 QPushButton#PrimaryButton:pressed {
-    background-color: #E0E0E0;
+    background-color: #152A42;
 }
 
 /* Secondary Button Styles */
 QPushButton#SecondaryButton {
     background-color: transparent;
-    color: #FFFFFF;
-    border: 1px solid #FFFFFF;
+    color: #666666;
+    border: none;
     border-radius: 8px;
     padding: 12px;
-    font-size: 16px;
+    font-size: 14px;
 }
 
 QPushButton#SecondaryButton:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    color: #000000;
+    text-decoration: underline;
 }
 
-QPushButton#SecondaryButton:pressed {
-    background-color: rgba(255, 255, 255, 0.2);
-}
-
-/* Title Label Styles */
-QLabel#TitleLabel {
+/* Create Project Button */
+QPushButton#CreateProjectButton {
+    background-color: #4A90E2;
     color: #FFFFFF;
-    font-size: 24px;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 14px;
     font-weight: bold;
 }
 
-/* Description Label Styles */
+QPushButton#CreateProjectButton:hover {
+    background-color: #357ABD;
+}
+
+/* Title Label Styles - Black Text on White Card */
+QLabel#TitleLabel {
+    background-color: transparent;
+    color: #000000;
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+/* Description Label Styles - Gray Text */
 QLabel#DescriptionLabel {
-    color: #FFFFFF;
-    font-size: 16px;
+    background-color: transparent;
+    color: #666666;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+/* Field Label Styles */
+QLabel#FieldLabel {
+    background-color: transparent;
+    color: #000000;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 8px;
 }
 
 /* Link Label Styles */
 QLabel#LinkLabel {
-    color: #FFFFFF;
+    background-color: transparent;
+    color: #666666;
     font-size: 14px;
 }
 
-QLabel#LinkLabel:hover {
+QLabel#LinkLabel a {
+    color: #4A90E2;
+    text-decoration: none;
+}
+
+QLabel#LinkLabel a:hover {
     text-decoration: underline;
 }
 
@@ -126,47 +185,173 @@ QLabel#ErrorLabel {
     margin-bottom: 5px;
 }
 
-/* Main Card Styles */
-QFrame#MainCard {
-    background-color: #1D3755;
-    border-radius: 15px;
-    padding: 20px;
-}
-
-/* User Label Styles */
+/* User Label Styles - White Text on Dark Background */
 QLabel#UserLabel {
+    background-color: transparent;
     color: #FFFFFF;
-    font-size: 18px;
+    font-size: 14px;
 }
 
 /* Header Label Styles */
 QLabel#HeaderLabel {
+    background-color: transparent;
     color: #FFFFFF;
     font-size: 24px;
     font-weight: bold;
 }
 
+/* Header Widget */
+QWidget#HeaderWidget {
+    background-color: #1D3755;
+    padding: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 /* Projects Table Styles */
 QTableWidget#ProjectsTable {
-    background-color: #1D3755;
-    color: #FFFFFF;
+    background-color: #FFFFFF;
+    color: #000000;
     border: none;
-    gridline-color: #D1E9FF;
+    gridline-color: #E0E0E0;
+    alternate-background-color: #F5F5F5;
 }
 
 QTableWidget#ProjectsTable::item {
-    padding: 8px;
-    border-bottom: 1px solid #D1E9FF;
+    padding: 12px 8px;
+    border-bottom: 1px solid #E0E0E0;
+    background-color: transparent;
 }
 
 QTableWidget#ProjectsTable::item:selected {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: #E8F4FF;
+    color: #000000;
 }
 
+QTableWidget#ProjectsTable::item:hover {
+    background-color: #F0F0F0;
+}
+
+/* Widgets inside table cells should have transparent background */
+QTableWidget#ProjectsTable QWidget {
+    background-color: transparent;
+}
+
+QTableWidget#ProjectsTable QLabel {
+    background-color: transparent;
+}
+
+/* Table Header Styles */
 QHeaderView::section {
-    background-color: #1D3755;
-    color: #FFFFFF;
+    background-color: #D1E9FF;
+    color: #1D3755;
     font-weight: bold;
+    font-size: 14px;
     border: none;
-    padding: 8px;
+    padding: 12px 8px;
+    border-bottom: 2px solid #1D3755;
+}
+
+QHeaderView::section:hover {
+    background-color: #B8D9F0;
+}
+
+/* Role Badge Styles */
+QPushButton#RoleBadge {
+    background-color: #E0E0E0;
+    color: #000000;
+    border: none;
+    border-radius: 12px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    min-height: 20px;
+    min-width: 70px;
+}
+
+QPushButton#RoleBadge:hover {
+    background-color: #D0D0D0;
+}
+
+/* Modal Dialog Styles */
+QDialog {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+QFrame#ModalCard {
+    background-color: #FFFFFF;
+    border-radius: 0px;
+    padding: 30px;
+    min-width: 500px;
+}
+
+/* Labels inside ModalCard should have transparent background */
+QFrame#ModalCard QLabel {
+    background-color: transparent;
+}
+
+/* Text Edit Styles */
+QTextEdit {
+    background-color: #FFFFFF;
+    border: 2px solid #D1E9FF;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 14px;
+    color: #000000;
+}
+
+QTextEdit:focus {
+    border: 2px solid #4A90E2;
+    outline: none;
+}
+
+/* Date Edit Styles */
+QDateEdit {
+    background-color: #FFFFFF;
+    border: 2px solid #D1E9FF;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 14px;
+    color: #000000;
+    min-height: 20px;
+}
+
+QDateEdit:focus {
+    border: 2px solid #4A90E2;
+    outline: none;
+}
+
+/* Eye Icon Button */
+QPushButton#EyeButton {
+    background-color: transparent;
+    border: none;
+    padding: 5px;
+    min-width: 24px;
+    min-height: 24px;
+}
+
+QPushButton#EyeButton:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+}
+
+/* Dropdown Styles */
+QFrame#UserDropdown {
+    background-color: #FFFFFF;
+    border-radius: 8px;
+    border: 1px solid #E0E0E0;
+}
+
+QPushButton#DropdownButton {
+    background-color: #FFFFFF;
+    color: #000000;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 14px;
+    text-align: left;
+    min-height: 20px;
+}
+
+QPushButton#DropdownButton:hover {
+    background-color: #F5F5F5;
 }

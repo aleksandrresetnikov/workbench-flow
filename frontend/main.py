@@ -12,8 +12,8 @@ from ui.main_screen import MainScreen
 class AuthApp(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Authentication App")
-        self.setGeometry(100, 100, 800, 600)
+        self.setWindowTitle("Workbench Flow")
+        self.setGeometry(100, 100, 1200, 800)
 
         # Initialize services
         self.auth_service = auth_service
@@ -95,11 +95,11 @@ class AuthApp(QMainWindow):
             if self.auth_service.fetch_current_user():
                 self.show_main_screen()
             else:
-                error_msg = "Failed to fetch user information. Please try again."
+                error_msg = "Не удалось получить информацию о пользователе. Попробуйте снова."
                 self.login_screen.show_error(error_msg)
                 print("Failed to fetch user after login")
         else:
-            error_msg = "Invalid username or password. Please try again."
+            error_msg = "Неверный email или пароль. Попробуйте снова."
             self.login_screen.show_error(error_msg)
             print("Login failed")
 
@@ -108,16 +108,27 @@ class AuthApp(QMainWindow):
         email = self.registration_screen.email_input.text()
         password = self.registration_screen.password_input.text()
         
+        if not email or not password:
+            error_msg = "Пожалуйста, заполните все поля."
+            self.registration_screen.show_error(error_msg)
+            return
+        
         if self.auth_service.register_user(email, email, password):
             # Registration successful, show OTP confirmation
             self.show_otp_confirmation(email)
         else:
+            error_msg = "Не удалось зарегистрироваться. Проверьте данные и попробуйте снова."
+            self.registration_screen.show_error(error_msg)
             print("Registration failed")
 
     def handle_otp_confirmation(self):
         """Handle OTP confirmation"""
         otp_code = self.otp_screen.get_otp_code()
         email = self.otp_screen.email
+        
+        if len(otp_code) != 6:
+            print("Please enter all 6 digits")
+            return
         
         if self.auth_service.confirm_otp(email, otp_code):
             # OTP confirmation successful, user is now authorized
@@ -146,7 +157,9 @@ if __name__ == "__main__":
     
     # Load and apply global theme
     try:
-        with open("ui/styles/theme.qss", "r") as f:
+        import os
+        theme_path = os.path.join(os.path.dirname(__file__), "ui", "styles", "theme.qss")
+        with open(theme_path, "r", encoding="utf-8") as f:
             app.setStyleSheet(f.read())
     except FileNotFoundError:
         print("Warning: Could not load theme.qss file")
