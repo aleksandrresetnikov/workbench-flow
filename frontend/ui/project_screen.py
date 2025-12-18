@@ -13,7 +13,9 @@ from PySide6.QtGui import QPixmap, QFont, QMouseEvent
 from services.auth_service import AuthService
 from api.projects import projects_api
 from api.dtos import ProjectWithDetailsDTO, ProjectMemberWithUserDTO
-from ui.components import UserDropdown, PrimaryButton
+from ui.components import UserDropdown, PrimaryButton, SecondaryButton
+from ui.dialogs.project_members_dialog import ProjectMembersDialog
+from ui.dialogs.project_roles_dialog import ProjectRolesDialog
 
 
 class ProjectScreen(QWidget):
@@ -66,18 +68,35 @@ class ProjectScreen(QWidget):
 
         back_row = QHBoxLayout()
         back_row.setContentsMargins(0, 0, 0, 0)
-        back_row.setSpacing(10)
+        back_row.setSpacing(16)
 
         back_btn = QPushButton("← К проектам")
         back_btn.setObjectName("BackButton")
         back_btn.setCursor(Qt.PointingHandCursor)
+        back_btn.setFixedHeight(32)
+        back_btn.setStyleSheet(
+            """
+            QPushButton#BackButton {
+                background-color: #13243A;
+                color: #FFFFFF;
+                border-radius: 16px;
+                padding: 6px 16px;
+                font-size: 13px;
+            }
+            QPushButton#BackButton:hover {
+                background-color: #1F3550;
+            }
+            """
+        )
         back_btn.clicked.connect(self.back_requested.emit)
         back_row.addWidget(back_btn)
 
         # Название проекта
         self.project_name_label = QLabel("Название проекта")
         self.project_name_label.setObjectName("HeaderLabel")
-        self.project_name_label.setStyleSheet("font-size: 20px; font-weight: bold; color: #FFFFFF;")
+        self.project_name_label.setStyleSheet(
+            "font-size: 20px; font-weight: bold; color: #FFFFFF;"
+        )
         back_row.addWidget(self.project_name_label)
 
         back_row.addStretch()
@@ -87,7 +106,7 @@ class ProjectScreen(QWidget):
         # Дополнительная строка с метаданными проекта
         self.meta_label = QLabel("Задач: 0 • Участников: 0")
         self.meta_label.setObjectName("MetaLabel")
-        self.meta_label.setStyleSheet("font-size: 12px; color: #D1E9FF;")
+        self.meta_label.setStyleSheet("font-size: 12px; color: #FFFFFF;")
         # left_layout.addWidget(self.meta_label)
 
         header_layout.addWidget(left_container)
@@ -100,17 +119,11 @@ class ProjectScreen(QWidget):
         right_layout.setContentsMargins(0, 0, 0, 0)
         right_layout.setSpacing(16)
 
-        # Участники (простая метка-плейсхолдер)
+        # Участники (краткая подпись)
         self.participants_label = QLabel("Участники: 0")
         self.participants_label.setObjectName("ParticipantsLabel")
         self.participants_label.setStyleSheet("font-size: 13px; color: #FFFFFF;")
         right_layout.addWidget(self.meta_label)
-
-        add_member_btn = PrimaryButton("+ Добавить участника")
-        add_member_btn.setFixedHeight(36)
-        # Логику добавления сделаем позже
-        add_member_btn.setEnabled(False)
-        right_layout.addWidget(add_member_btn)
 
         # Информация о текущем пользователе (как на главном экране)
         user_widget = QWidget()
@@ -166,10 +179,36 @@ class ProjectScreen(QWidget):
     def _create_content_area(self) -> QWidget:
         content = QFrame()
         content.setObjectName("ProjectContent")
+        content.setStyleSheet("QFrame#ProjectContent { background-color: #FFFFFF; }")
 
         layout = QVBoxLayout(content)
         layout.setContentsMargins(30, 24, 30, 24)
         layout.setSpacing(16)
+
+        # Панель действий над задачами (горизонтальный бар под шапкой)
+        actions_row = QHBoxLayout()
+        actions_row.setContentsMargins(0, 0, 0, 0)
+        actions_row.setSpacing(12)
+
+        add_task_btn = PrimaryButton("Новая задача")
+        add_task_btn.setFixedHeight(40)
+        # Логику создания задачи добавим позже
+        add_task_btn.setEnabled(False)
+        actions_row.addWidget(add_task_btn)
+
+        members_btn = SecondaryButton("Участники проекта")
+        members_btn.setFixedHeight(40)
+        members_btn.clicked.connect(self._open_members_dialog)
+        actions_row.addWidget(members_btn)
+
+        roles_btn = SecondaryButton("Роли участников")
+        roles_btn.setFixedHeight(40)
+        roles_btn.clicked.connect(self._open_roles_dialog)
+        actions_row.addWidget(roles_btn)
+
+        actions_row.addStretch()
+
+        layout.addLayout(actions_row)
 
         # Пока только заглушка под канбан
         title = QLabel("Канбан-доска проекта")
@@ -209,7 +248,9 @@ class ProjectScreen(QWidget):
         # Количество задач пока не считаем — оставим 0
         tasks_count = 0
 
-        self.meta_label.setText(f"Задач: {tasks_count} • Участников: {participants_count}")
+        self.meta_label.setText(
+            f"Задач: {tasks_count} • Участников: {participants_count}"
+        )
         self.participants_label.setText(f"Участники: {participants_count}")
 
     # ----- Events -----
@@ -225,5 +266,13 @@ class ProjectScreen(QWidget):
             self.dropdown.move(dropdown_x, dropdown_y)
             self.dropdown.show()
         event.accept()
+
+    def _open_members_dialog(self):
+        dialog = ProjectMembersDialog(self)
+        dialog.exec()
+
+    def _open_roles_dialog(self):
+        dialog = ProjectRolesDialog(self)
+        dialog.exec()
 
 

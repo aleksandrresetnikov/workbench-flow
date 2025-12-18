@@ -2,17 +2,25 @@
 # Projects page displaying user's projects with management features
 
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, 
-    QTableWidget, QTableWidgetItem, QHeaderView, QDialog, 
-    QLineEdit, QTextEdit, QDateEdit, QMessageBox, QFrame
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
+    QHeaderView,
+    QMessageBox,
+    QFrame,
 )
 from PySide6.QtCore import Qt, Signal, QPoint
 from PySide6.QtGui import QPixmap, QFont, QMouseEvent
 
 from services.auth_service import AuthService
 from api.projects import projects_api
-from api.dtos import ProjectCreateDTO, ProjectDTO
-from ui.components import CreateProjectButton, PrimaryButton, FieldLabel, ModalCard, UserDropdown
+from api.dtos import ProjectDTO
+from ui.components import CreateProjectButton, UserDropdown
+from ui.dialogs.create_project_dialog import CreateProjectDialog
 
 def translate_role(role: str, is_owner: bool = False) -> str:
     """Translate role to Russian"""
@@ -229,7 +237,7 @@ class MainScreen(QWidget):
 
     def show_create_dialog(self):
         """Show the create project dialog"""
-        dialog = CreateProjectDialog(self.auth_service)
+        dialog = CreateProjectDialog(self.auth_service, self)
         dialog.project_created.connect(self.on_project_created)
         dialog.exec()
 
@@ -257,91 +265,3 @@ class MainScreen(QWidget):
         """Handle logout button click"""
         self.dropdown.hide()
         self.logout_requested.emit()
-
-
-class CreateProjectDialog(QDialog):
-    """Dialog for creating a new project"""
-    project_created = Signal(ProjectDTO)
-
-    def __init__(self, auth_service: AuthService):
-        super().__init__()
-        self.auth_service = auth_service
-        self.setWindowTitle("Новый проект")
-        self.setModal(True)
-        self.setStyleSheet("QDialog { background-color: rgba(0, 0, 0, 0.5); }")
-        self.setup_ui()
-
-    def setup_ui(self):
-        """Setup the dialog UI"""
-        layout = QVBoxLayout(self)
-        layout.setAlignment(Qt.AlignCenter)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
-
-        # Modal card
-        card = ModalCard()
-        card.setFixedWidth(550)
-
-        # Title
-        title = QLabel("Новый проект")
-        title.setObjectName("TitleLabel")
-        title.setAlignment(Qt.AlignLeft)
-        title.setStyleSheet("color: #000000; font-size: 24px; font-weight: bold; margin-bottom: 20px;")
-        card.layout.addWidget(title)
-
-        # Project Name
-        name_label = FieldLabel("Наименование")
-        card.layout.addWidget(name_label)
-        
-        self.name_input = QLineEdit()
-        self.name_input.setObjectName("InputField")
-        self.name_input.setPlaceholderText("Введите наименование проекта")
-        self.name_input.setFixedHeight(50)
-        card.layout.addWidget(self.name_input)
-
-        # Description
-        desc_label = FieldLabel("Описание")
-        card.layout.addWidget(desc_label)
-        
-        self.desc_input = QTextEdit()
-        self.desc_input.setObjectName("TextEdit")
-        self.desc_input.setPlaceholderText("Введите описание проекта")
-        self.desc_input.setMaximumHeight(100)
-        card.layout.addWidget(self.desc_input)
-
-        # Deadline (optional)
-        deadline_label = FieldLabel("Сроки выполнения")
-        card.layout.addWidget(deadline_label)
-        
-        self.deadline_input = QDateEdit()
-        self.deadline_input.setObjectName("DateEdit")
-        self.deadline_input.setCalendarPopup(True)
-        self.deadline_input.setFixedHeight(50)
-        card.layout.addWidget(self.deadline_input)
-
-        # Create button
-        create_button = PrimaryButton("Создать")
-        create_button.setFixedHeight(50)
-        create_button.clicked.connect(self.accept)
-        card.layout.addWidget(create_button)
-
-        layout.addWidget(card)
-
-    def accept(self):
-        """Handle create button click"""
-        name = self.name_input.text().strip()
-        if not name:
-            QMessageBox.warning(self, "Ошибка валидации", "Наименование проекта обязательно.")
-            return
-
-        desc = self.desc_input.toPlainText().strip()
-        # Deadline not implemented in API yet
-
-        data = ProjectCreateDTO(Name=name, Description=desc or None)
-
-        try:
-            project = projects_api.create_project(data, self.auth_service.token)
-            self.project_created.emit(project)
-            super().accept()
-        except Exception as e:
-            QMessageBox.critical(self, "Ошибка", f"Не удалось создать проект: {e}")

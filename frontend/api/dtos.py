@@ -61,7 +61,14 @@ class ProjectDTO(BaseModel):
     IsDeleted: bool
 
 class ProjectWithDetailsDTO(ProjectDTO):
-    Owner: UserDTO
+    # Совпадает с backend ProjectWithDetails:
+    # owner: Optional[User] = None
+    # logo: Optional[StoreFile] = None
+    # members: List[ProjectMember] = []
+    # task_groups: List[TaskGroup] = []
+    owner: Optional[UserDTO] = None
+    members: List["ProjectMemberDTO"] = []
+    task_groups: List["TaskGroupDTO"] = []
 
 class ProjectMemberCreateDTO(BaseModel):
     MemnerId: int
@@ -88,7 +95,7 @@ class TaskGroupDTO(BaseModel):
     Id: int
     Name: str
     ProjectId: int
-    CreatedAt: datetime
+    CreateDate: datetime
 
 # ========== Task DTOs ==========
 class TaskCreateDTO(BaseModel):
