@@ -29,6 +29,7 @@ def translate_role(role: str, is_owner: bool = False) -> str:
 class MainScreen(QWidget):
     """Main screen displaying projects list with header and create functionality"""
     logout_requested = Signal()
+    project_open_requested = Signal(int)
 
     def __init__(self, auth_service: AuthService):
         super().__init__()
@@ -49,6 +50,8 @@ class MainScreen(QWidget):
         # Projects table
         self.table = self.create_projects_table()
         self.layout.addWidget(self.table)
+
+        self.table.cellDoubleClicked.connect(self.handle_project_double_click)
 
     def create_header(self) -> QWidget:
         """Create the top header with title, user info, and create button"""
@@ -152,10 +155,10 @@ class MainScreen(QWidget):
     def load_projects(self):
         """Load and display user's projects"""
         try:
-            projects = projects_api.get_my_projects(self.auth_service.token)
-            self.table.setRowCount(len(projects))
+            self.projects = projects_api.get_my_projects(self.auth_service.token)
+            self.table.setRowCount(len(self.projects))
 
-            for i, project in enumerate(projects):
+            for i, project in enumerate(self.projects):
                 # Index
                 index_item = QTableWidgetItem(str(i + 1))
                 index_item.setTextAlignment(Qt.AlignCenter)
@@ -214,6 +217,15 @@ class MainScreen(QWidget):
         except Exception as e:
             print(f"Error loading projects: {e}")
             QMessageBox.critical(self, "Ошибка", f"Не удалось загрузить проекты: {e}")
+
+    def handle_project_double_click(self, row: int, column: int):
+        """Open project screen on row double click"""
+        if not hasattr(self, "projects"):
+            return
+        if row < 0 or row >= len(self.projects):
+            return
+        project = self.projects[row]
+        self.project_open_requested.emit(project.Id)
 
     def show_create_dialog(self):
         """Show the create project dialog"""

@@ -8,6 +8,7 @@ from PySide6.QtCore import QTimer
 from services import auth_service
 from ui.auth_screens import LoginScreen, RegistrationScreen, OTPConfirmationScreen
 from ui.main_screen import MainScreen
+from ui.project_screen import ProjectScreen
 
 class AuthApp(QMainWindow):
     def __init__(self):
@@ -17,6 +18,10 @@ class AuthApp(QMainWindow):
 
         # Initialize services
         self.auth_service = auth_service
+
+        # Screens cache
+        self.main_screen: MainScreen | None = None
+        self.project_screens: dict[int, ProjectScreen] = {}
 
         # Setup UI
         self.setup_ui()
@@ -32,7 +37,6 @@ class AuthApp(QMainWindow):
         # Create screens
         self.login_screen = LoginScreen()
         self.registration_screen = RegistrationScreen()
-        self.main_screen = None
 
         # Add screens to stacked widget
         self.stacked_widget.addWidget(self.login_screen)
@@ -78,13 +82,27 @@ class AuthApp(QMainWindow):
 
     def show_main_screen(self):
         """Show main screen"""
-        if self.auth_service.current_user:
+        if not self.auth_service.current_user:
+            return
+
+        if self.main_screen is None:
             self.main_screen = MainScreen(self.auth_service)
             self.main_screen.logout_requested.connect(self.handle_logout)
-
-            # Add main screen to stacked widget
+            self.main_screen.project_open_requested.connect(self.show_project_screen)
             self.stacked_widget.addWidget(self.main_screen)
-            self.stacked_widget.setCurrentWidget(self.main_screen)
+
+        self.stacked_widget.setCurrentWidget(self.main_screen)
+
+    def show_project_screen(self, project_id: int):
+        """Show individual project screen"""
+        if project_id not in self.project_screens:
+            project_screen = ProjectScreen(self.auth_service, project_id)
+            project_screen.back_requested.connect(self.show_main_screen)
+            project_screen.logout_requested.connect(self.handle_logout)
+            self.project_screens[project_id] = project_screen
+            self.stacked_widget.addWidget(project_screen)
+
+        self.stacked_widget.setCurrentWidget(self.project_screens[project_id])
 
     def handle_login(self):
         """Handle login attempt"""
