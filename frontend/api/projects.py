@@ -59,10 +59,32 @@ class ProjectsAPI:
         response = self._make_request("POST", f"/api/projects/{project_id}/members", token=token, json=member_data.dict())
         return ProjectMemberDTO(**response)
     
-    def update_project_member_role(self, project_id: int, member_id: int, role_data: ProjectMemberBaseDTO, token: str) -> ProjectMemberDTO:
-        """Update project member role"""
-        response = self._make_request("PUT", f"/api/projects/{project_id}/members/{member_id}", token=token, json=role_data.dict())
+    def update_project_member_access(self, project_id: int, member_id: int, access_data: ProjectMemberBaseDTO, token: str) -> ProjectMemberDTO:
+        """Update project member access level / assigned role"""
+        response = self._make_request("PUT", f"/api/projects/{project_id}/members/{member_id}", token=token, json=access_data.dict())
         return ProjectMemberDTO(**response)
+
+    # ---- Project roles ----
+
+    def get_project_roles(self, project_id: int, token: str) -> List[ProjectRoleDTO]:
+        """Get project-defined roles (admin-only endpoint on backend)"""
+        response = self._make_request("GET", f"/api/projects/{project_id}/roles", token=token)
+        return [ProjectRoleDTO(**role) for role in response]
+
+    def create_project_role(self, project_id: int, role_data: ProjectRoleCreateDTO, token: str) -> ProjectRoleDTO:
+        """Create new role for project (admin-only)"""
+        response = self._make_request("POST", f"/api/projects/{project_id}/roles", token=token, json=role_data.dict())
+        return ProjectRoleDTO(**response)
+
+    def update_project_role(self, role_id: int, role_data: ProjectRoleUpdateDTO, token: str) -> ProjectRoleDTO:
+        """Update existing project role (admin-only)"""
+        response = self._make_request("PUT", f"/api/roles/{role_id}", token=token, json=role_data.dict(exclude_unset=True))
+        return ProjectRoleDTO(**response)
+
+    def delete_project_role(self, role_id: int, token: str) -> APIResponse:
+        """Delete project role (admin-only)"""
+        response = self._make_request("DELETE", f"/api/roles/{role_id}", token=token)
+        return APIResponse(**response)
     
     def remove_project_member(self, project_id: int, member_id: int, token: str) -> APIResponse:
         """Remove project member"""

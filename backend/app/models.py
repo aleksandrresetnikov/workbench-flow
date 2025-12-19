@@ -1,12 +1,12 @@
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, Date, ForeignKey, CheckConstraint, UniqueConstraint, Enum
+from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, Date, ForeignKey, CheckConstraint, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import ENUM as PGEnum
 from app.database import Base
 import enum
 
-# Enum для ролей в проекте
-class ProjectRole(str, enum.Enum):
+
+class AccessLevel(str, enum.Enum):
     COMMON = "Common"
     ADMIN = "Admin"
 
@@ -30,6 +30,7 @@ class User(Base):
     project_memberships = relationship("ProjectMember", back_populates="member")
     pins = relationship("Pin", back_populates="user")
     otp = relationship("Otp", back_populates="user")
+    marks = relationship("Mark", back_populates="author")
 
 class Otp(Base):
     __tablename__ = 'Otps'
@@ -73,23 +74,39 @@ class Project(Base):
     task_groups = relationship("TaskGroup", back_populates="project", cascade="all, delete-orphan")
     members = relationship("ProjectMember", back_populates="project", cascade="all, delete-orphan")
 
+
+class ProjectRoleEntity(Base):
+    __tablename__ = 'ProjectRoles'
+
+    Id = Column('Id', Integer, primary_key=True, index=True)
+    ProjectId = Column('ProjectId', Integer, ForeignKey('Projects.Id', ondelete='CASCADE'), index=True)
+    RoleName = Column('RoleName', String(96), nullable=False)
+    CreateDate = Column('CreateDate', DateTime(timezone=True), server_default=func.now(), nullable=False)
+    Rate = Column('Rate', Integer)
+
+    # Relationships
+    project = relationship("Project")
+    members = relationship("ProjectMember", back_populates="role")
+
 class ProjectMember(Base):
     __tablename__ = 'ProjectMembers'
     
     Id = Column('Id', Integer, primary_key=True, index=True)
     ProjectId = Column('ProjectId', Integer, ForeignKey('Projects.Id', ondelete='CASCADE'), index=True)
     MemnerId = Column('MemnerId', Integer, ForeignKey('Users.Id', ondelete='CASCADE'), index=True)
-    Role = Column('Role', String(6), default='Common', nullable=False)
+    AccessLevel = Column('AccessLevel', String(10), default=AccessLevel.COMMON.value, nullable=False)
+    RoleId = Column('RoleId', Integer, ForeignKey('ProjectRoles.Id', ondelete='SET NULL'), nullable=True)
     CreateDate = Column('CreateDate', DateTime(timezone=True), server_default=func.now(), nullable=False)
     
     # Relationships
     project = relationship("Project", back_populates="members")
     member = relationship("User", back_populates="project_memberships")
+    role = relationship("ProjectRoleEntity", back_populates="members")
     
     # Constraints
     __table_args__ = (
         UniqueConstraint('ProjectId', 'MemnerId', name='UniqueProjectMembers'),
-        CheckConstraint('"Role" IN (\'Common\', \'Admin\')', name='ValidRoles'),
+        CheckConstraint('"AccessLevel" IN (\'Common\', \'Admin\')', name='ValidAccessLevels'),
     )
 
 class TaskGroup(Base):
@@ -135,6 +152,26 @@ class Task(Base):
     comments = relationship("Comment", back_populates="task", cascade="all, delete-orphan")
     task_files = relationship("TaskFile", back_populates="task", cascade="all, delete-orphan")
     pins = relationship("Pin", back_populates="task", cascade="all, delete-orphan")
+    marks = relationship("Mark", back_populates="task", cascade="all, delete-orphan")
+
+
+class Mark(Base):
+    __tablename__ = 'Marks'
+
+    Id = Column('Id', Integer, primary_key=True, index=True)
+    TargetTask = Column('TargetTask', Integer, ForeignKey('Tasks.Id', ondelete='CASCADE'), index=True)
+    MarkedById = Column('MarkedById', Integer, ForeignKey('Users.Id', ondelete='CASCADE'), index=True)
+    Description = Column('Description', Text, nullable=False)
+    Rate = Column('Rate', Integer, nullable=True)
+    CreateDate = Column('CreateDate', DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        CheckConstraint('"Rate" >= 0 AND "Rate" <= 10', name='ValidRates'),
+    )
+
+    # Relationships
+    task = relationship("Task", back_populates="marks")
+    author = relationship("User", back_populates="marks")
 
 class TaskFile(Base):
     __tablename__ = 'TaskFiles'

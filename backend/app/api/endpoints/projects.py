@@ -3,7 +3,13 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from app.crud.project import get_user_projects, get_project, create_project, update_project, get_projects
-from app.crud.project_member import get_project_members, add_project_member, update_project_member_role, remove_project_member, get_project_member
+from app.crud.project_member import (
+    get_project_members,
+    add_project_member,
+    update_project_member_access,
+    remove_project_member,
+    get_project_member,
+)
 from app.crud.user import get_user
 from app.database import get_db
 
@@ -109,7 +115,13 @@ async def add_project_member_endpoint(
             detail="User is already a member of this project"
         )
     
-    member = add_project_member(db, project_id, member_data.MemnerId, member_data.Role)
+    member = add_project_member(
+        db,
+        project_id,
+        member_data.MemnerId,
+        access_level=member_data.AccessLevel,
+        role_id=member_data.RoleId,
+    )
     return member
 
 @router.put("/{project_id}/members/{member_id}", response_model=schemas.ProjectMember)
@@ -136,7 +148,13 @@ async def update_project_member_role_endpoint(
             detail="Cannot modify owner's role"
         )
     
-    member = update_project_member_role(db, project_id, member_id, role_data.Role)
+    member = update_project_member_access(
+        db,
+        project_id,
+        member_id,
+        access_level=role_data.AccessLevel,
+        role_id=role_data.RoleId,
+    )
     if not member:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

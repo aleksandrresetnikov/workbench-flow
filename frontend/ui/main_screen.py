@@ -22,17 +22,17 @@ from api.dtos import ProjectDTO
 from ui.components import CreateProjectButton, UserDropdown
 from ui.dialogs.create_project_dialog import CreateProjectDialog
 
-def translate_role(role: str, is_owner: bool = False) -> str:
-    """Translate role to Russian"""
+def translate_access_level(access_level: str, is_owner: bool = False) -> str:
+    """Translate access level to Russian."""
     if is_owner:
         return "Владелец"
-    role_map = {
+    level_map = {
         "Admin": "Админ",
         "Common": "Участник",
         "admin": "Админ",
         "common": "Участник",
     }
-    return role_map.get(role, role)
+    return level_map.get(access_level, access_level)
 
 class MainScreen(QWidget):
     """Main screen displaying projects list with header and create functionality"""
@@ -200,7 +200,8 @@ class MainScreen(QWidget):
                     members = projects_api.get_project_members(project.Id, self.auth_service.token)
                     user_member = next((m for m in members if m.MemnerId == self.auth_service.current_user.Id), None)
                     is_owner = project.OwnerId == self.auth_service.current_user.Id
-                    role = translate_role(user_member.Role if user_member else "Common", is_owner)
+                    access_level = user_member.AccessLevel if user_member else "Common"
+                    role = translate_access_level(access_level, is_owner)
                     participants = len(members)
                 except Exception as e:
                     print(f"Error fetching members for project {project.Id}: {e}")

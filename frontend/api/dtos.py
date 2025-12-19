@@ -69,23 +69,45 @@ class ProjectWithDetailsDTO(ProjectDTO):
     owner: Optional[UserDTO] = None
     members: List["ProjectMemberDTO"] = []
     task_groups: List["TaskGroupDTO"] = []
+    roles: List["ProjectRoleDTO"] = []
 
 class ProjectMemberCreateDTO(BaseModel):
     MemnerId: int
-    Role: str
+    AccessLevel: str
+    RoleId: Optional[int] = None
 
 class ProjectMemberBaseDTO(BaseModel):
-    Role: str
+    AccessLevel: str
+    RoleId: Optional[int] = None
 
 class ProjectMemberDTO(BaseModel):
     Id: int
     ProjectId: int
     MemnerId: int
-    Role: str
+    AccessLevel: str
+    RoleId: Optional[int] = None
     CreateDate: datetime
 
 class ProjectMemberWithUserDTO(ProjectMemberDTO):
     member: UserDTO
+
+
+class ProjectRoleCreateDTO(BaseModel):
+    RoleName: str
+    Rate: Optional[int] = None
+
+
+class ProjectRoleUpdateDTO(BaseModel):
+    RoleName: Optional[str] = None
+    Rate: Optional[int] = None
+
+
+class ProjectRoleDTO(BaseModel):
+    Id: int
+    ProjectId: int
+    RoleName: str
+    Rate: Optional[int] = None
+    CreateDate: datetime
 
 # ========== Task Group DTOs ==========
 class TaskGroupCreateDTO(BaseModel):

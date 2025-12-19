@@ -9,8 +9,6 @@ from app import models, schemas
 from app.database import get_db
 import hashlib
 
-from app.schemas import ProjectRole
-
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
@@ -106,7 +104,7 @@ def check_project_admin_access(db: Session, project_id: int, user_id: int) -> bo
     
     # Check if user is admin member
     member = get_project_member(db, project_id, user_id)
-    if member and member.Role == ProjectRole.ADMIN.value:
+    if member and member.AccessLevel == "Admin":
         return True
     
     return False

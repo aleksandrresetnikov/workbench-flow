@@ -1,12 +1,9 @@
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import BaseModel, EmailStr, ConfigDict, Field
 from datetime import datetime, date
 from typing import Optional, List
-from enum import Enum
 
-# Enums
-class ProjectRole(str, Enum):
-    COMMON = "Common"
-    ADMIN = "Admin"
+# AccessLevel is represented as a plain string in API ("Common" or "Admin").
+AccessLevel = str
 
 # Base Schemas
 class UserBase(BaseModel):
@@ -106,10 +103,14 @@ class ProjectWithDetails(Project):
     owner: Optional[User] = None
     logo: Optional[StoreFile] = None
     members: List['ProjectMember'] = []
+    # Роли, определённые внутри проекта
+    roles: List['ProjectRole'] = []
     task_groups: List['TaskGroup'] = []
 
 class ProjectMemberBase(BaseModel):
-    Role: ProjectRole = ProjectRole.COMMON
+    # None => будет интерпретировано на уровне бизнес-логики как "Common"
+    AccessLevel: Optional[AccessLevel] = None
+    RoleId: Optional[int] = None
 
 class ProjectMemberCreate(ProjectMemberBase):
     MemnerId: int
@@ -124,6 +125,28 @@ class ProjectMember(ProjectMemberBase):
 
 class ProjectMemberWithUser(ProjectMember):
     member: User
+
+
+class ProjectRoleBase(BaseModel):
+    RoleName: str
+    Rate: Optional[int] = Field(default=None, ge=0, le=10)
+
+
+class ProjectRoleCreate(ProjectRoleBase):
+    pass
+
+
+class ProjectRoleUpdate(BaseModel):
+    RoleName: Optional[str] = None
+    Rate: Optional[int] = Field(default=None, ge=0, le=10)
+
+
+class ProjectRole(ProjectRoleBase):
+    Id: int
+    ProjectId: int
+    CreateDate: datetime
+
+    model_config = ConfigDict(from_attributes=True)
 
 class TaskGroupBase(BaseModel):
     Name: str
@@ -235,6 +258,34 @@ class Pin(PinBase):
 
 class PinWithTask(Pin):
     task: Task
+
+
+class MarkBase(BaseModel):
+    Description: str
+    Rate: Optional[int] = Field(default=None, ge=0, le=10)
+
+
+class MarkCreate(MarkBase):
+    TargetTask: int
+
+
+class MarkUpdate(BaseModel):
+    Description: Optional[str] = None
+    Rate: Optional[int] = Field(default=None, ge=0, le=10)
+
+
+class Mark(MarkBase):
+    Id: int
+    TargetTask: int
+    MarkedById: int
+    CreateDate: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MarkWithDetails(Mark):
+    task: Optional[Task] = None
+    author: Optional[User] = None
 
 # Update forward references
 ProjectWithDetails.model_rebuild()
