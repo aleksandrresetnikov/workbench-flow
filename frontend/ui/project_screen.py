@@ -272,7 +272,11 @@ class ProjectScreen(QWidget):
         dialog.exec()
 
     def _open_roles_dialog(self):
-        dialog = ProjectRolesDialog(self)
+        dialog = ProjectRolesDialog(
+            auth_service=self.auth_service,
+            project_id=self.project_id,
+            parent=self,
+        )
         dialog.exec()
 
 

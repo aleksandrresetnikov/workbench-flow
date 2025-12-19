@@ -112,16 +112,21 @@ class ProjectMemberBase(BaseModel):
     AccessLevel: Optional[AccessLevel] = None
     RoleId: Optional[int] = None
 
+
 class ProjectMemberCreate(ProjectMemberBase):
     MemnerId: int
 
+
 class ProjectMember(ProjectMemberBase):
+    # В ответах API уровень доступа всегда строка ("Common" / "Admin")
+    AccessLevel: AccessLevel
     Id: int
     ProjectId: int
     MemnerId: int
     CreateDate: datetime
     
     model_config = ConfigDict(from_attributes=True)
+
 
 class ProjectMemberWithUser(ProjectMember):
     member: User
