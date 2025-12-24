@@ -12,8 +12,11 @@ from PySide6.QtGui import QPixmap, QFont, QMouseEvent
 
 from services.auth_service import AuthService
 from api.projects import projects_api
-from api.dtos import ProjectWithDetailsDTO, ProjectMemberWithUserDTO
+from api.task_groups import task_groups_api
+from api.tasks import tasks_api
+from api.dtos import ProjectWithDetailsDTO, ProjectMemberWithUserDTO, TaskGroupDTO, TaskDTO
 from ui.components import UserDropdown, PrimaryButton, SecondaryButton
+from ui.components.kanban_board import KanbanBoard
 from ui.dialogs.project_members_dialog import ProjectMembersDialog
 from ui.dialogs.project_roles_dialog import ProjectRolesDialog
 
@@ -36,6 +39,8 @@ class ProjectScreen(QWidget):
 
         self.project: ProjectWithDetailsDTO | None = None
         self.members: list[ProjectMemberWithUserDTO] = []
+        self.task_groups: list[TaskGroupDTO] = []
+        self.tasks: list[TaskDTO] = []
         self.is_admin: bool = False
 
         self._setup_ui()
@@ -213,18 +218,19 @@ class ProjectScreen(QWidget):
 
         layout.addLayout(actions_row)
 
-        # Пока только заглушка под канбан
-        title = QLabel("Канбан-доска проекта")
-        title.setFont(QFont("Arial", 18, QFont.Bold))
-        layout.addWidget(title)
+        # Область для канбан-доски
+        self.kanban_area = QWidget()
+        kanban_layout = QVBoxLayout(self.kanban_area)
+        kanban_layout.setContentsMargins(0, 0, 0, 0)
+        kanban_layout.setSpacing(0)
 
-        placeholder = QLabel(
-            "Здесь будет канбан-доска с задачами этого проекта.\n"
-            "Сейчас реализована только верстка страницы проекта."
-        )
+        # Заглушка до загрузки данных
+        placeholder = QLabel("Загрузка канбан-доски...")
         placeholder.setAlignment(Qt.AlignCenter)
         placeholder.setStyleSheet("color: #666666; font-size: 14px;")
-        layout.addWidget(placeholder, stretch=1)
+        kanban_layout.addWidget(placeholder)
+
+        layout.addWidget(self.kanban_area, stretch=1)
 
         return content
 
@@ -235,11 +241,27 @@ class ProjectScreen(QWidget):
         try:
             self.project = projects_api.get_project_details(self.project_id, self.auth_service.token)
             self.members = projects_api.get_project_members(self.project_id, self.auth_service.token)
+            self.task_groups = task_groups_api.get_task_groups_for_project(self.project_id, self.auth_service.token)
+            self.tasks = tasks_api.get_tasks(self.project_id, self.auth_service.token)
 
             self._update_header_info()
+            self._update_content()
         except Exception as e:
             print(f"Error loading project {self.project_id}: {e}")
             QMessageBox.critical(self, "Ошибка", f"Не удалось загрузить проект: {e}")
+
+    def _update_content(self):
+        """Обновить содержимое канбан-доски после загрузки данных."""
+        # Очистить текущий контент
+        if self.kanban_area.layout():
+            while self.kanban_area.layout().count():
+                child = self.kanban_area.layout().takeAt(0)
+                if child.widget():
+                    child.widget().deleteLater()
+
+        # Создать канбан-доску
+        self.kanban_board = KanbanBoard(self.task_groups, self.tasks)
+        self.kanban_area.layout().addWidget(self.kanban_board)
 
     def _update_header_info(self):
         if not self.project:
@@ -248,8 +270,8 @@ class ProjectScreen(QWidget):
         self.project_name_label.setText(self.project.Name)
 
         participants_count = len(self.members)
-        # Количество задач пока не считаем — оставим 0
-        tasks_count = 0
+        # Количество задач
+        tasks_count = len(self.tasks)
 
         self.meta_label.setText(
             f"Задач: {tasks_count} • Участников: {participants_count}"
@@ -267,6 +289,19 @@ class ProjectScreen(QWidget):
         self.is_admin = bool(is_owner or access_level == "Admin")
         self.members_btn.setEnabled(self.is_admin)
         self.roles_btn.setEnabled(self.is_admin)
+
+    def _update_content(self):
+        """Обновить содержимое канбан-доски после загрузки данных."""
+        # Очистить текущий контент
+        if self.kanban_area.layout():
+            while self.kanban_area.layout().count():
+                child = self.kanban_area.layout().takeAt(0)
+                if child.widget():
+                    child.widget().deleteLater()
+
+        # Создать канбан-доску
+        self.kanban_board = KanbanBoard(self.task_groups, self.tasks)
+        self.kanban_area.layout().addWidget(self.kanban_board)
 
     # ----- Events -----
 
