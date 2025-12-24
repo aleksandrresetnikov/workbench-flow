@@ -120,11 +120,15 @@ class TaskGroupDTO(BaseModel):
     CreateDate: datetime
 
 # ========== Task DTOs ==========
+from datetime import date
+
 class TaskCreateDTO(BaseModel):
-    Name: str
-    Description: Optional[str] = None
+    Title: str
+    Text: Optional[str] = None
     GroupId: Optional[int] = None
-    Status: Optional[str] = None
+    DeadLine: Optional[date] = None
+    TargetId: Optional[int] = None
+    StateId: Optional[int] = None
 
 class TaskDTO(BaseModel):
     Id: int

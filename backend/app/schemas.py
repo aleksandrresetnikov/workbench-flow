@@ -184,7 +184,7 @@ class TaskBase(BaseModel):
     Title: str
     Text: str
     TargetId: Optional[int] = None
-    StateId: Optional[int] = 0
+    StateId: Optional[int] = None
     GroupId: Optional[int] = None
     DeadLine: Optional[date] = None
 

@@ -33,8 +33,32 @@ def get_project_tasks(db: Session, project_id: int, closed: Optional[bool] = Non
     
     return query.all()
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 def create_task(db: Session, task: schemas.TaskCreate, author_id: int) -> models.Task:
-    db_task = models.Task(**task.model_dump(), AuthorId=author_id)
+    task_data = task.model_dump(exclude_unset=True)
+    logger.debug("create_task incoming data: %s", task_data)
+
+    # Defensive: if StateId mistakenly set to 0, treat it as unspecified (NULL)
+    if task_data.get('StateId') == 0:
+        task_data.pop('StateId')
+
+    # If no state specified, try to set a default (first existing TaskState) to avoid NULL/FK issues
+    if task_data.get('StateId') is None:
+        first_state = db.query(models.TaskState).order_by(models.TaskState.Id).first()
+        if not first_state:
+            # No states exist yet - create a sensible default so we don't violate FK
+            logger.info("No TaskState found; creating default 'To Do' state")
+            first_state = models.TaskState(Name='To Do')
+            db.add(first_state)
+            db.commit()
+            db.refresh(first_state)
+        task_data['StateId'] = first_state.Id
+
+    logger.debug("create_task final data: %s", task_data)
+    db_task = models.Task(**task_data, AuthorId=author_id)
     db.add(db_task)
     db.commit()
     db.refresh(db_task)

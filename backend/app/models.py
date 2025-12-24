@@ -138,7 +138,7 @@ class Task(Base):
     Text = Column('Text', Text, nullable=False)
     AuthorId = Column('AuthorId', Integer, ForeignKey('Users.Id', ondelete='SET NULL'), index=True)
     TargetId = Column('TargetId', Integer, ForeignKey('Users.Id', ondelete='SET NULL'), index=True)
-    StateId = Column('StateId', Integer, ForeignKey('TaskStates.Id', ondelete='SET NULL'), default=0)
+    StateId = Column('StateId', Integer, ForeignKey('TaskStates.Id', ondelete='SET NULL'), nullable=True, default=None)
     GroupId = Column('GroupId', Integer, ForeignKey('TaskGroups.Id', ondelete='CASCADE'), index=True)
     CreateDate = Column('CreateDate', DateTime(timezone=True), server_default=func.now(), nullable=False)
     IsClosed = Column('IsClosed', Boolean, default=False, nullable=False, index=True)

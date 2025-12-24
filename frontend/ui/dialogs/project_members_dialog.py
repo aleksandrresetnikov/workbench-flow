@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QComboBox,
     QCheckBox,
 )
+from typing import Optional
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor, QBrush
 
@@ -230,7 +231,7 @@ class AddProjectMemberDialog(QDialog):
 
         self.users_table.resizeColumnsToContents()
 
-    def _get_selected_user(self) -> UserDTO | None:
+    def _get_selected_user(self) -> Optional[UserDTO]:
         row = self.users_table.currentRow()
         if row < 0 or row >= len(self.filtered_users):
             return None
@@ -497,7 +498,7 @@ class ProjectMembersDialog(QDialog):
 
         self.table.resizeColumnsToContents()
 
-    def _get_selected_member(self) -> ProjectMemberWithUserDTO | None:
+    def _get_selected_member(self) -> Optional[ProjectMemberWithUserDTO]:
         row = self.table.currentRow()
         if row < 0 or row >= len(self.members):
             return None

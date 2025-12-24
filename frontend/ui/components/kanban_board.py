@@ -1,8 +1,9 @@
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea, QFrame
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea, QFrame, QPushButton
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
+from typing import Optional, Callable
 
 from api.dtos import TaskGroupDTO, TaskDTO
 from .task_card import TaskCard
@@ -13,10 +14,11 @@ class KanbanBoard(QWidget):
     Компонент канбан-доски с колонками как task groups и задачами как карточками.
     """
 
-    def __init__(self, task_groups: list[TaskGroupDTO], tasks: list[TaskDTO], parent=None):
+    def __init__(self, task_groups: list[TaskGroupDTO], tasks: list[TaskDTO], on_add_task: Optional[Callable[[int], None]] = None, parent=None):
         super().__init__(parent)
         self.task_groups = task_groups
         self.tasks = tasks
+        self.on_add_task = on_add_task
         self._setup_ui()
 
     def _setup_ui(self):
@@ -69,7 +71,11 @@ class KanbanBoard(QWidget):
         layout.setContentsMargins(12, 12, 12, 12)
         layout.setSpacing(8)
 
-        # Название группы
+        # Header row: group name + add button
+        header_row = QHBoxLayout()
+        header_row.setContentsMargins(0, 0, 0, 0)
+        header_row.setSpacing(8)
+
         group_label = QLabel(group.Name)
         group_label.setObjectName("GroupLabel")
         group_label.setStyleSheet("""
@@ -77,10 +83,30 @@ class KanbanBoard(QWidget):
                 font-size: 16px;
                 font-weight: bold;
                 color: #333333;
-                padding-bottom: 8px;
             }
         """)
-        layout.addWidget(group_label)
+        header_row.addWidget(group_label)
+        header_row.addStretch()
+
+        add_btn = QPushButton("+")
+        add_btn.setObjectName("AddTaskButton")
+        add_btn.setFixedSize(28, 28)
+        add_btn.setCursor(Qt.PointingHandCursor)
+        add_btn.setStyleSheet("""
+            QPushButton#AddTaskButton { background-color: transparent; color: #1F3550; border-radius: 14px; font-weight:bold; }
+            QPushButton#AddTaskButton:hover { background-color: #E6F0FF; }
+        """)
+        # Connect add button
+        def _on_add():
+            if callable(self.on_add_task):
+                try:
+                    self.on_add_task(group.Id)
+                except Exception:
+                    pass
+        add_btn.clicked.connect(_on_add)
+        header_row.addWidget(add_btn)
+
+        layout.addLayout(header_row)
 
         # Задачи в этой группе
         group_tasks = [task for task in self.tasks if task.GroupId == group.Id]

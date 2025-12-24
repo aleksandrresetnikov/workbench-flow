@@ -355,7 +355,7 @@ curl -X GET "http://localhost:8000/api/tasks/my" \
   "Title": "string",
   "Text": "string",
   "TargetId": "integer (optional)",
-  "StateId": "integer (optional, default: 0)",
+  "StateId": "integer (optional)",
   "GroupId": "integer (optional)",
   "DeadLine": "date (optional)"
 }

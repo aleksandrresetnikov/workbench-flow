@@ -17,7 +17,8 @@ class FieldLabel(QLabel):
     def __init__(self, text: str = "", parent=None):
         super().__init__(text, parent)
         self.setObjectName("FieldLabel")
-        self.setStyleSheet("background-color: transparent;")
+        # Provide consistent spacing and readable color so labels don't overlap inputs
+        self.setStyleSheet("background-color: transparent; color: #333333; font-size:13px; margin-bottom:6px;")
 
 class DescriptionLabel(QLabel):
     """Description label with gray text"""

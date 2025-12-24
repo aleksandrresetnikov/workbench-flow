@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, Signal, QPoint
 from PySide6.QtGui import QPixmap, QFont, QMouseEvent
+from typing import Optional, List
 
 from services.auth_service import AuthService
 from api.projects import projects_api
@@ -20,6 +21,7 @@ from ui.components.kanban_board import KanbanBoard
 from ui.dialogs.project_members_dialog import ProjectMembersDialog
 from ui.dialogs.project_roles_dialog import ProjectRolesDialog
 from ui.dialogs.project_task_groups_dialog import ProjectTaskGroupsDialog
+from ui.dialogs.create_task_dialog import CreateTaskDialog
 
 
 class ProjectScreen(QWidget):
@@ -38,10 +40,10 @@ class ProjectScreen(QWidget):
         self.auth_service = auth_service
         self.project_id = project_id
 
-        self.project: ProjectWithDetailsDTO | None = None
-        self.members: list[ProjectMemberWithUserDTO] = []
-        self.task_groups: list[TaskGroupDTO] = []
-        self.tasks: list[TaskDTO] = []
+        self.project: Optional[ProjectWithDetailsDTO] = None
+        self.members: List[ProjectMemberWithUserDTO] = []
+        self.task_groups: List[TaskGroupDTO] = []
+        self.tasks: List[TaskDTO] = []
         self.is_admin: bool = False
 
         self._setup_ui()
@@ -197,11 +199,11 @@ class ProjectScreen(QWidget):
         actions_row.setContentsMargins(0, 0, 0, 0)
         actions_row.setSpacing(12)
 
-        add_task_btn = PrimaryButton("Новая задача")
-        add_task_btn.setFixedHeight(40)
-        # Логику создания задачи добавим позже
-        add_task_btn.setEnabled(False)
-        actions_row.addWidget(add_task_btn)
+        self.add_task_btn = PrimaryButton("Новая задача")
+        self.add_task_btn.setFixedHeight(40)
+        self.add_task_btn.setEnabled(False)  # включим после успешной загрузки проекта
+        self.add_task_btn.clicked.connect(self._open_create_task_dialog)
+        actions_row.addWidget(self.add_task_btn)
 
         self.members_btn = SecondaryButton("Участники проекта")
         self.members_btn.setFixedHeight(40)
@@ -266,8 +268,8 @@ class ProjectScreen(QWidget):
                 if child.widget():
                     child.widget().deleteLater()
 
-        # Создать канбан-доску
-        self.kanban_board = KanbanBoard(self.task_groups, self.tasks)
+        # Создать канбан-доску (передаём callback для кнопки '+' в колонках)
+        self.kanban_board = KanbanBoard(self.task_groups, self.tasks, on_add_task=self._open_create_task_dialog_with_group)
         self.kanban_area.layout().addWidget(self.kanban_board)
 
     def _update_header_info(self):
@@ -298,6 +300,9 @@ class ProjectScreen(QWidget):
         self.roles_btn.setEnabled(self.is_admin)
         self.groups_btn.setEnabled(self.is_admin)
 
+        # Разрешаем создавать задачи всем пользователям, если проект загружен и у пользователя есть доступ
+        self.add_task_btn.setEnabled(True)
+
     def _update_content(self):
         """Обновить содержимое канбан-доски после загрузки данных."""
         # Очистить текущий контент
@@ -307,8 +312,8 @@ class ProjectScreen(QWidget):
                 if child.widget():
                     child.widget().deleteLater()
 
-        # Создать канбан-доску
-        self.kanban_board = KanbanBoard(self.task_groups, self.tasks)
+        # Создать канбан-доску (передаём callback для кнопки '+' в колонках)
+        self.kanban_board = KanbanBoard(self.task_groups, self.tasks, on_add_task=self._open_create_task_dialog_with_group)
         self.kanban_area.layout().addWidget(self.kanban_board)
 
     # ----- Events -----
@@ -331,6 +336,40 @@ class ProjectScreen(QWidget):
             project_id=self.project_id,
             parent=self,
         )
+        dialog.exec()
+
+    def _open_create_task_dialog(self):
+        dialog = CreateTaskDialog(
+            auth_service=self.auth_service,
+            project_id=self.project_id,
+            members=self.members,
+            groups=self.task_groups,
+            parent=self,
+        )
+
+        def on_task_created(task):
+            # обновляем список задач и перерисовываем доску
+            self.tasks.append(task)
+            self._update_content()
+
+        dialog.task_created.connect(on_task_created)
+        dialog.exec()
+
+    def _open_create_task_dialog_with_group(self, group_id: int):
+        dialog = CreateTaskDialog(
+            auth_service=self.auth_service,
+            project_id=self.project_id,
+            members=self.members,
+            groups=self.task_groups,
+            preselected_group_id=group_id,
+            parent=self,
+        )
+
+        def on_task_created(task):
+            self.tasks.append(task)
+            self._update_content()
+
+        dialog.task_created.connect(on_task_created)
         dialog.exec()
 
     def _open_roles_dialog(self):
