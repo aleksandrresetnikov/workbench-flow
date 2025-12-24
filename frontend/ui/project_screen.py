@@ -19,6 +19,7 @@ from ui.components import UserDropdown, PrimaryButton, SecondaryButton
 from ui.components.kanban_board import KanbanBoard
 from ui.dialogs.project_members_dialog import ProjectMembersDialog
 from ui.dialogs.project_roles_dialog import ProjectRolesDialog
+from ui.dialogs.project_task_groups_dialog import ProjectTaskGroupsDialog
 
 
 class ProjectScreen(QWidget):
@@ -214,6 +215,12 @@ class ProjectScreen(QWidget):
         self.roles_btn.clicked.connect(self._open_roles_dialog)
         actions_row.addWidget(self.roles_btn)
 
+        self.groups_btn = SecondaryButton("Группы задач")
+        self.groups_btn.setFixedHeight(40)
+        self.groups_btn.setEnabled(False)
+        self.groups_btn.clicked.connect(self._open_groups_dialog)
+        actions_row.addWidget(self.groups_btn)
+
         actions_row.addStretch()
 
         layout.addLayout(actions_row)
@@ -289,6 +296,7 @@ class ProjectScreen(QWidget):
         self.is_admin = bool(is_owner or access_level == "Admin")
         self.members_btn.setEnabled(self.is_admin)
         self.roles_btn.setEnabled(self.is_admin)
+        self.groups_btn.setEnabled(self.is_admin)
 
     def _update_content(self):
         """Обновить содержимое канбан-доски после загрузки данных."""
@@ -332,5 +340,22 @@ class ProjectScreen(QWidget):
             parent=self,
         )
         dialog.exec()
+
+    def _open_groups_dialog(self):
+        dialog = ProjectTaskGroupsDialog(
+            auth_service=self.auth_service,
+            project_id=self.project_id,
+            parent=self,
+        )
+        dialog.exec()
+
+        # После закрытия диалога обновим локальные группы и перерисуем доску
+        try:
+            self.task_groups = task_groups_api.get_task_groups_for_project(self.project_id, self.auth_service.token)
+            self.tasks = tasks_api.get_tasks(self.project_id, self.auth_service.token)
+            self._update_content()
+        except Exception as e:
+            print(f"Error reloading groups/tasks: {e}")
+            QMessageBox.warning(self, "Внимание", f"Не удалось обновить группы/задачи после изменений:\n{e}")
 
 
