@@ -3,7 +3,6 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QLabel,
     QLineEdit,
-    QSpinBox,
     QHBoxLayout,
     QMessageBox,
 )
@@ -27,6 +26,7 @@ class CreateProjectRoleDialog(QDialog):
 
         self.setWindowTitle("Новая роль проекта")
         self.setModal(True)
+        self.setFixedSize(520, 220)
         self.setStyleSheet("QDialog { background-color: rgba(0, 0, 0, 0.5); }")
 
         self._setup_ui()
@@ -65,19 +65,6 @@ class CreateProjectRoleDialog(QDialog):
         self.name_input.setFixedHeight(44)
         card.layout.addWidget(self.name_input)
 
-        # Ставка (опционально)
-        rate_label = FieldLabel("Ставка (0–10, необязательно)")
-        card.layout.addWidget(rate_label)
-
-        self.rate_input = QSpinBox()
-        # Используем -1 как «нет значения»
-        self.rate_input.setRange(-1, 10)
-        self.rate_input.setValue(-1)
-        self.rate_input.setSpecialValueText("—")
-        self.rate_input.setObjectName("SpinBox")
-        self.rate_input.setFixedHeight(44)
-        card.layout.addWidget(self.rate_input)
-
         # Кнопки
         buttons_row = QHBoxLayout()
         buttons_row.setContentsMargins(0, 0, 0, 0)
@@ -107,10 +94,7 @@ class CreateProjectRoleDialog(QDialog):
             QMessageBox.warning(self, "Ошибка валидации", "Название роли обязательно.")
             return
 
-        rate_value = self.rate_input.value()
-        rate = None if rate_value < 0 else rate_value
-
-        data = ProjectRoleCreateDTO(RoleName=name, Rate=rate)
+        data = ProjectRoleCreateDTO(RoleName=name)
 
         try:
             role = projects_api.create_project_role(

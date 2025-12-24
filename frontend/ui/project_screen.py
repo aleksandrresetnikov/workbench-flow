@@ -36,6 +36,7 @@ class ProjectScreen(QWidget):
 
         self.project: ProjectWithDetailsDTO | None = None
         self.members: list[ProjectMemberWithUserDTO] = []
+        self.is_admin: bool = False
 
         self._setup_ui()
         self._load_data()
@@ -196,15 +197,17 @@ class ProjectScreen(QWidget):
         add_task_btn.setEnabled(False)
         actions_row.addWidget(add_task_btn)
 
-        members_btn = SecondaryButton("Участники проекта")
-        members_btn.setFixedHeight(40)
-        members_btn.clicked.connect(self._open_members_dialog)
-        actions_row.addWidget(members_btn)
+        self.members_btn = SecondaryButton("Участники проекта")
+        self.members_btn.setFixedHeight(40)
+        self.members_btn.setEnabled(False)  # включим для админов после загрузки данных
+        self.members_btn.clicked.connect(self._open_members_dialog)
+        actions_row.addWidget(self.members_btn)
 
-        roles_btn = SecondaryButton("Роли участников")
-        roles_btn.setFixedHeight(40)
-        roles_btn.clicked.connect(self._open_roles_dialog)
-        actions_row.addWidget(roles_btn)
+        self.roles_btn = SecondaryButton("Роли участников")
+        self.roles_btn.setFixedHeight(40)
+        self.roles_btn.setEnabled(False)  # включим для админов после загрузки данных
+        self.roles_btn.clicked.connect(self._open_roles_dialog)
+        actions_row.addWidget(self.roles_btn)
 
         actions_row.addStretch()
 
@@ -253,6 +256,18 @@ class ProjectScreen(QWidget):
         )
         self.participants_label.setText(f"Участники: {participants_count}")
 
+        # Определяем, является ли текущий пользователь администратором проекта
+        current_user_id = self.auth_service.current_user.Id
+        is_owner = self.project.OwnerId == current_user_id
+        user_member = next(
+            (m for m in self.members if m.MemnerId == current_user_id), None
+        )
+        access_level = getattr(user_member, "AccessLevel", "Common") if user_member else "Common"
+
+        self.is_admin = bool(is_owner or access_level == "Admin")
+        self.members_btn.setEnabled(self.is_admin)
+        self.roles_btn.setEnabled(self.is_admin)
+
     # ----- Events -----
 
     def _on_avatar_clicked(self, event: QMouseEvent):
@@ -268,7 +283,11 @@ class ProjectScreen(QWidget):
         event.accept()
 
     def _open_members_dialog(self):
-        dialog = ProjectMembersDialog(self)
+        dialog = ProjectMembersDialog(
+            auth_service=self.auth_service,
+            project_id=self.project_id,
+            parent=self,
+        )
         dialog.exec()
 
     def _open_roles_dialog(self):

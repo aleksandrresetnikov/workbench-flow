@@ -28,7 +28,8 @@ class ProjectRolesDialog(QDialog):
 
         self.setWindowTitle("Роли участников проекта")
         self.setModal(True)
-        # Полупрозрачный фон поверх основного экрана
+        # Фиксированный размер и полупрозрачный фон
+        self.setFixedSize(720, 420)
         self.setStyleSheet("QDialog { background-color: rgba(0, 0, 0, 0.5); }")
 
         self._setup_ui()
@@ -62,15 +63,15 @@ class ProjectRolesDialog(QDialog):
         subtitle.setStyleSheet("color: #555555; font-size: 13px;")
         card.layout.addWidget(subtitle)
 
-        # Таблица ролей
+        # Таблица ролей (без поля Rate)
         self.table = QTableWidget()
-        self.table.setColumnCount(3)
-        self.table.setHorizontalHeaderLabels(["Название роли", "Ставка (0–10)", "Создана"])
+        self.table.setColumnCount(2)
+        self.table.setHorizontalHeaderLabels(["Название роли", "Создана"])
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
         self.table.setSelectionMode(QTableWidget.SingleSelection)
         self.table.horizontalHeader().setStretchLastSection(True)
-        self.table.horizontalHeader().setDefaultSectionSize(180)
+        self.table.horizontalHeader().setDefaultSectionSize(220)
         self.table.verticalHeader().setVisible(False)
         self.table.setAlternatingRowColors(True)
         self.table.setFixedHeight(260)
@@ -122,12 +123,6 @@ class ProjectRolesDialog(QDialog):
             name_item.setFlags(name_item.flags() ^ Qt.ItemIsEditable)
             self.table.setItem(row, 0, name_item)
 
-            # Ставка
-            rate_text = "" if role.Rate is None else str(role.Rate)
-            rate_item = QTableWidgetItem(rate_text)
-            rate_item.setFlags(rate_item.flags() ^ Qt.ItemIsEditable)
-            self.table.setItem(row, 1, rate_item)
-
             # Дата создания (читаемый формат)
             created_at = role.CreateDate
             if isinstance(created_at, str):
@@ -143,7 +138,7 @@ class ProjectRolesDialog(QDialog):
 
             created_item = QTableWidgetItem(created_text)
             created_item.setFlags(created_item.flags() ^ Qt.ItemIsEditable)
-            self.table.setItem(row, 2, created_item)
+            self.table.setItem(row, 1, created_item)
 
         self.table.resizeColumnsToContents()
 

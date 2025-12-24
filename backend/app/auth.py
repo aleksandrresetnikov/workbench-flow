@@ -39,7 +39,7 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     return encoded_jwt
 
 def authenticate_user(db: Session, username: str, password: str):
-    user = db.query(models.User).filter(models.User.Username == username).first()
+    user = db.query(models.User).filter(models.User.Username == username or models.User.Email == username).first()
     if not user:
         return False
     if not verify_password(password, user.PasswordHash):
