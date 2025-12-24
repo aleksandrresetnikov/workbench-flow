@@ -16,7 +16,8 @@ from api.dtos import ProjectWithDetailsDTO, ProjectMemberWithUserDTO
 from ui.components import UserDropdown, PrimaryButton, SecondaryButton
 from ui.dialogs.project_members_dialog import ProjectMembersDialog
 from ui.dialogs.project_roles_dialog import ProjectRolesDialog
-
+from ui.components.kanban_board import KanbanBoard
+from api.dtos import TaskDTO, TaskGroupDTO
 
 class ProjectScreen(QWidget):
     """
@@ -37,6 +38,8 @@ class ProjectScreen(QWidget):
         self.project: ProjectWithDetailsDTO | None = None
         self.members: list[ProjectMemberWithUserDTO] = []
         self.is_admin: bool = False
+        self.task_groups: list[TaskGroupDTO] = []
+        self.tasks: list[TaskDTO] = []
 
         self._setup_ui()
         self._load_data()
@@ -218,28 +221,55 @@ class ProjectScreen(QWidget):
         title.setFont(QFont("Arial", 18, QFont.Bold))
         layout.addWidget(title)
 
-        placeholder = QLabel(
-            "Здесь будет канбан-доска с задачами этого проекта.\n"
-            "Сейчас реализована только верстка страницы проекта."
+        self.board = KanbanBoard(
+            groups=self.task_groups,
+            tasks=self.tasks,
+            parent=self,
         )
-        placeholder.setAlignment(Qt.AlignCenter)
-        placeholder.setStyleSheet("color: #666666; font-size: 14px;")
-        layout.addWidget(placeholder, stretch=1)
+        layout.addWidget(self.board, stretch=1)
 
         return content
 
     # ----- Data loading -----
 
     def _load_data(self):
-        """Загрузить детали проекта и участников и отобразить их в шапке."""
         try:
-            self.project = projects_api.get_project_details(self.project_id, self.auth_service.token)
-            self.members = projects_api.get_project_members(self.project_id, self.auth_service.token)
+            self.project = projects_api.get_project_details(
+                self.project_id, self.auth_service.token
+            )
+            self.members = projects_api.get_project_members(
+                self.project_id, self.auth_service.token
+            )
+
+            # ---- MOCK DATA ----
+            self.task_groups: list[TaskGroupDTO] = self.project.task_groups
+
+            self.tasks: list[TaskDTO] = [
+                TaskDTO(
+                    Id=1,
+                    Name="Login Flow",
+                    Description="Проработать сценарий входа",
+                    ProjectId=self.project_id,
+                    GroupId=self.task_groups[0].Id,
+                    Status="Дизайн",
+                    CreatedAt=self.project.CreateDate,
+                ),
+                TaskDTO(
+                    Id=2,
+                    Name="Fix crash",
+                    Description="Краш при открытии профиля",
+                    ProjectId=self.project_id,
+                    GroupId=self.task_groups[1].Id,
+                    Status="Баг",
+                    CreatedAt=self.project.CreateDate,
+                ),
+            ]
 
             self._update_header_info()
+            self._render_kanban()
+
         except Exception as e:
-            print(f"Error loading project {self.project_id}: {e}")
-            QMessageBox.critical(self, "Ошибка", f"Не удалось загрузить проект: {e}")
+            QMessageBox.critical(self, "Ошибка", str(e))
 
     def _update_header_info(self):
         if not self.project:
@@ -267,6 +297,9 @@ class ProjectScreen(QWidget):
         self.is_admin = bool(is_owner or access_level == "Admin")
         self.members_btn.setEnabled(self.is_admin)
         self.roles_btn.setEnabled(self.is_admin)
+
+    def _render_kanban(self):
+        self.board.update_board(self.task_groups, self.tasks)
 
     # ----- Events -----
 
