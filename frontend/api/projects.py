@@ -18,8 +18,23 @@ class ProjectsAPI:
         
         try:
             response = requests.request(method, url, headers=headers, **kwargs)
-            response.raise_for_status()
-            return response.json()
+            try:
+                response.raise_for_status()
+                # try json, fallback to text
+                try:
+                    return response.json()
+                except ValueError:
+                    return response.text
+            except requests.exceptions.HTTPError as http_err:
+                # extract useful body to help debug validation errors
+                body = None
+                try:
+                    body = response.json()
+                except ValueError:
+                    body = response.text
+                print(f"API request failed: {http_err} - {body}")
+                # raise a clearer exception for the UI to show
+                raise Exception(f"{response.status_code} {body}") from http_err
         except requests.exceptions.RequestException as e:
             print(f"API request failed: {e}")
             raise
@@ -56,12 +71,12 @@ class ProjectsAPI:
     
     def add_project_member(self, project_id: int, member_data: ProjectMemberCreateDTO, token: str) -> ProjectMemberDTO:
         """Add a member to project"""
-        response = self._make_request("POST", f"/api/projects/{project_id}/members", token=token, json=member_data.dict())
+        response = self._make_request("POST", f"/api/projects/{project_id}/members", token=token, json=member_data.dict(exclude_none=True))
         return ProjectMemberDTO(**response)
     
     def update_project_member_access(self, project_id: int, member_id: int, access_data: ProjectMemberBaseDTO, token: str) -> ProjectMemberDTO:
         """Update project member access level / assigned role"""
-        response = self._make_request("PUT", f"/api/projects/{project_id}/members/{member_id}", token=token, json=access_data.dict())
+        response = self._make_request("PUT", f"/api/projects/{project_id}/members/{member_id}", token=token, json=access_data.dict(exclude_unset=True, exclude_none=True))
         return ProjectMemberDTO(**response)
 
     # ---- Project roles ----

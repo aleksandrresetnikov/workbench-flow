@@ -1,14 +1,19 @@
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QHBoxLayout
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QFrame, QHBoxLayout
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 
 from api.dtos import TaskDTO
 
 
-class TaskCard(QWidget):
-    """
-    Компонент карточки задачи для канбан-доски.
-    """
+TAG_COLORS = {
+    "Дизайн": "#1F3A5F",
+    "Баг": "#8B1E3F",
+    "UX": "#2D6A4F",
+    "Нововведение": "#5A4FCF",
+}
+
+
+class TaskCard(QFrame):
 
     def __init__(self, task: TaskDTO, parent=None):
         super().__init__(parent)
@@ -18,81 +23,54 @@ class TaskCard(QWidget):
     def _setup_ui(self):
         self.setObjectName("TaskCard")
         self.setStyleSheet("""
-            QWidget#TaskCard {
+            QFrame#TaskCard {
                 background-color: #FFFFFF;
-                border: 1px solid #E1E5E9;
-                border-radius: 8px;
-                padding: 12px;
-                margin-bottom: 8px;
-            }
-            QWidget#TaskCard:hover {
-                border-color: #007BFF;
+                border-radius: 10px;
+                border: 1px solid #E6E6E6;
             }
         """)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setContentsMargins(12, 10, 12, 10)
         layout.setSpacing(8)
 
-        # Название задачи
-        title_label = QLabel(self.task.Name)
-        title_label.setObjectName("TaskTitle")
-        title_label.setStyleSheet("""
-            QLabel#TaskTitle {
-                font-size: 14px;
-                font-weight: bold;
-                color: #333333;
-            }
-        """)
-        layout.addWidget(title_label)
+        # ---- Title ----
+        title = QLabel(self.task.Name)
+        title.setFont(QFont("Arial", 11, QFont.Bold))
+        title.setStyleSheet("color: #1C1C1C;")
+        layout.addWidget(title)
 
-        # Описание задачи (если есть)
+        # ---- Description ----
         if self.task.Description:
-            desc_label = QLabel(self.task.Description)
-            desc_label.setObjectName("TaskDescription")
-            desc_label.setStyleSheet("""
-                QLabel#TaskDescription {
-                    font-size: 12px;
-                    color: #666666;
-                    word-wrap: true;
-                }
-            """)
-            desc_label.setWordWrap(True)
-            layout.addWidget(desc_label)
+            desc = QLabel(self.task.Description)
+            desc.setWordWrap(True)
+            desc.setStyleSheet("color: #666666; font-size: 12px;")
+            layout.addWidget(desc)
 
-        # Теги (используем Status как тег)
-        if self.task.Status:
-            tags_layout = QHBoxLayout()
-            tags_layout.setContentsMargins(0, 0, 0, 0)
-            tags_layout.setSpacing(4)
+        # ---- Deadline ----
+        if self.task.Deadline:
+            deadline = QLabel(f"Дедлайн: {self.task.Deadline.strftime('%d.%m.%Y')}")
+            deadline.setStyleSheet("color: #FF6B6B; font-size: 10px; font-weight: bold;")
+            layout.addWidget(deadline)
 
-            # Разделим Status по запятой, если несколько
-            tags = [tag.strip() for tag in self.task.Status.split(',')]
-            for tag in tags:
-                tag_label = QLabel(tag)
-                tag_label.setObjectName("TaskTag")
-                tag_label.setStyleSheet("""
-                    QLabel#TaskTag {
-                        background-color: #E3F2FD;
-                        color: #1976D2;
-                        padding: 2px 6px;
-                        border-radius: 4px;
-                        font-size: 10px;
-                        font-weight: bold;
-                    }
-                """)
-                tags_layout.addWidget(tag_label)
+        # ---- Tags ----
+        tags_row = QHBoxLayout()
+        tags_row.setSpacing(6)
 
-            tags_layout.addStretch()
-            layout.addLayout(tags_layout)
-
-        # Дата создания (опционально, внизу)
-        created_label = QLabel(f"Создано: {self.task.CreatedAt.strftime('%d.%m.%Y')}")
-        created_label.setObjectName("TaskCreated")
-        created_label.setStyleSheet("""
-            QLabel#TaskCreated {
-                font-size: 10px;
-                color: #999999;
-            }
+        # Временно: используем Status как тег
+        tag_text = self.task.Status or "Общее"
+        tag = QLabel(tag_text)
+        tag.setAlignment(Qt.AlignCenter)
+        tag.setStyleSheet(f"""
+            QLabel {{
+                background-color: {TAG_COLORS.get(tag_text, "#13243A")};
+                color: #FFFFFF;
+                border-radius: 6px;
+                padding: 2px 8px;
+                font-size: 11px;
+            }}
         """)
-        layout.addWidget(created_label)
+        tags_row.addWidget(tag)
+        tags_row.addStretch()
+
+        layout.addLayout(tags_row)

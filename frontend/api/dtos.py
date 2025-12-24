@@ -1,5 +1,5 @@
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime
 
 # ========== Auth DTOs ==========
@@ -73,11 +73,11 @@ class ProjectWithDetailsDTO(ProjectDTO):
 
 class ProjectMemberCreateDTO(BaseModel):
     MemnerId: int
-    AccessLevel: str
+    AccessLevel: Optional[str] = None
     RoleId: Optional[int] = None
 
 class ProjectMemberBaseDTO(BaseModel):
-    AccessLevel: str
+    AccessLevel: Optional[str] = None
     RoleId: Optional[int] = None
 
 class ProjectMemberDTO(BaseModel):
@@ -128,12 +128,13 @@ class TaskCreateDTO(BaseModel):
 
 class TaskDTO(BaseModel):
     Id: int
-    Name: str
+    Name: str = Field(alias="Title")
     Description: Optional[str] = None
-    ProjectId: int
+    ProjectId: Optional[int] = None
     GroupId: Optional[int] = None
-    Status: str
-    CreatedAt: datetime
+    Status: Optional[str] = None
+    CreatedAt: Optional[datetime] = None
+    Deadline: Optional[datetime] = None
 
 # ========== File DTOs ==========
 class FileUploadDTO(BaseModel):

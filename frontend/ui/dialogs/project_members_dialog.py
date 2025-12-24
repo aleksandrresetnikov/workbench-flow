@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QCheckBox,
 )
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QColor, QBrush
 
 from services.auth_service import AuthService
 from api.projects import projects_api
@@ -111,8 +112,36 @@ class AddProjectMemberDialog(QDialog):
         self.users_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.users_table.horizontalHeader().setStretchLastSection(True)
         self.users_table.verticalHeader().setVisible(False)
-        self.users_table.setAlternatingRowColors(True)
+        # Disable Qt alternating row default (we handle visuals via stylesheet)
+        self.users_table.setAlternatingRowColors(False)
         self.users_table.setFixedHeight(200)
+        # Apply consistent modal table styling: dark background, light header
+        self.users_table.setStyleSheet("""
+            QTableWidget {
+                background-color: #13243A;
+                color: #FFFFFF;
+                border: none;
+            }
+            QTableWidget::item {
+                background-color: transparent;
+                padding: 8px;
+                border: none;
+            }
+            QTableWidget::item:selected {
+                background-color: #1F3550;
+                color: #FFFFFF;
+            }
+            QHeaderView::section {
+                background-color: #D1E9FF;
+                color: #000000;
+                padding: 10px;
+                border: none;
+            }
+            QTableWidget QTableCornerButton::section {
+                background-color: #D1E9FF;
+                border: none;
+            }
+        """)
         card.layout.addWidget(self.users_table)
 
         # Настройки доступа
@@ -191,10 +220,12 @@ class AddProjectMemberDialog(QDialog):
 
             name_item = QTableWidgetItem(full_name)
             name_item.setFlags(name_item.flags() ^ Qt.ItemIsEditable)
+            name_item.setForeground(QBrush(QColor("#FFFFFF")))
             self.users_table.setItem(row, 0, name_item)
 
             email_item = QTableWidgetItem(user.Email)
             email_item.setFlags(email_item.flags() ^ Qt.ItemIsEditable)
+            email_item.setForeground(QBrush(QColor("#FFFFFF")))
             self.users_table.setItem(row, 1, email_item)
 
         self.users_table.resizeColumnsToContents()
@@ -211,28 +242,43 @@ class AddProjectMemberDialog(QDialog):
             QMessageBox.warning(self, "Не выбран пользователь", "Выберите пользователя из списка.")
             return
 
-        access_level = "Admin" if self.admin_checkbox.isChecked() else "Common"
+        access_level = "Admin" if self.admin_checkbox.isChecked() else None
         role_id = self.role_combo.currentData()
 
         member_data = ProjectMemberCreateDTO(
             MemnerId=user.Id,
-            AccessLevel=access_level,
             RoleId=role_id,
         )
 
         try:
-            projects_api.add_project_member(
+            created = projects_api.add_project_member(
                 self.project_id,
                 member_data,
                 self.auth_service.token,
             )
+
+            # Если прозапрошен админ-бокс — сразу обновляем уровень доступа через отдельный вызов
+            if access_level == "Admin":
+                try:
+                    projects_api.update_project_member_access(
+                        self.project_id,
+                        created.Id,
+                        ProjectMemberBaseDTO(AccessLevel="Admin"),
+                        self.auth_service.token,
+                    )
+                except Exception as inner_e:
+                    # логируем, но не блокируем добавление
+                    QMessageBox.warning(self, "Внимание", f"Участник добавлен, но не удалось назначить администратора:\n{inner_e}")
+
             self.member_added.emit()
             self.accept()
         except Exception as e:
+            # Показать подробный ответ от API, если он есть (часто содержит валидационные ошибки)
+            detail = str(e)
             QMessageBox.critical(
                 self,
                 "Ошибка",
-                f"Не удалось добавить участника:\n{e}",
+                f"Не удалось добавить участника:\n{detail}",
             )
 
 
@@ -335,8 +381,36 @@ class ProjectMembersDialog(QDialog):
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.table.horizontalHeader().setStretchLastSection(True)
         self.table.verticalHeader().setVisible(False)
-        self.table.setAlternatingRowColors(True)
+        # Disable default alternating rows (we style rows consistently)
+        self.table.setAlternatingRowColors(False)
         self.table.setFixedHeight(300)
+        # Apply consistent modal table styling: dark background, light header
+        self.table.setStyleSheet("""
+            QTableWidget {
+                background-color: #13243A;
+                color: #FFFFFF;
+                border: none;
+            }
+            QTableWidget::item {
+                background-color: transparent;
+                padding: 8px;
+                border: none;
+            }
+            QTableWidget::item:selected {
+                background-color: #1F3550;
+                color: #FFFFFF;
+            }
+            QHeaderView::section {
+                background-color: #D1E9FF;
+                color: #000000;
+                padding: 10px;
+                border: none;
+            }
+            QTableWidget QTableCornerButton::section {
+                background-color: #D1E9FF;
+                border: none;
+            }
+        """)
         card.layout.addWidget(self.table)
 
         # Кнопки управления
@@ -403,18 +477,22 @@ class ProjectMembersDialog(QDialog):
 
             name_item = QTableWidgetItem(full_name)
             name_item.setFlags(name_item.flags() ^ Qt.ItemIsEditable)
+            name_item.setForeground(QBrush(QColor("#FFFFFF")))
             self.table.setItem(row, 0, name_item)
 
             email_item = QTableWidgetItem(user.Email)
             email_item.setFlags(email_item.flags() ^ Qt.ItemIsEditable)
+            email_item.setForeground(QBrush(QColor("#FFFFFF")))
             self.table.setItem(row, 1, email_item)
 
             access_item = QTableWidgetItem(access_label)
             access_item.setFlags(access_item.flags() ^ Qt.ItemIsEditable)
+            access_item.setForeground(QBrush(QColor("#FFFFFF")))
             self.table.setItem(row, 2, access_item)
 
             role_item = QTableWidgetItem(role_name)
             role_item.setFlags(role_item.flags() ^ Qt.ItemIsEditable)
+            role_item.setForeground(QBrush(QColor("#FFFFFF")))
             self.table.setItem(row, 3, role_item)
 
         self.table.resizeColumnsToContents()

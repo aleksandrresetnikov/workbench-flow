@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
 )
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor, QBrush
 from datetime import datetime
 
 from services.auth_service import AuthService
@@ -73,8 +74,36 @@ class ProjectRolesDialog(QDialog):
         self.table.horizontalHeader().setStretchLastSection(True)
         self.table.horizontalHeader().setDefaultSectionSize(220)
         self.table.verticalHeader().setVisible(False)
-        self.table.setAlternatingRowColors(True)
+        # Disable default alternating rows (we style rows ourselves)
+        self.table.setAlternatingRowColors(False)
         self.table.setFixedHeight(260)
+        # Apply consistent modal table styling: dark background, light header
+        self.table.setStyleSheet("""
+            QTableWidget {
+                background-color: #13243A;
+                color: #FFFFFF;
+                border: none;
+            }
+            QTableWidget::item {
+                background-color: transparent;
+                padding: 8px;
+                border: none;
+            }
+            QTableWidget::item:selected {
+                background-color: #1F3550;
+                color: #FFFFFF;
+            }
+            QHeaderView::section {
+                background-color: #D1E9FF;
+                color: #000000;
+                padding: 10px;
+                border: none;
+            }
+            QTableWidget QTableCornerButton::section {
+                background-color: #D1E9FF;
+                border: none;
+            }
+        """)
         card.layout.addWidget(self.table)
 
         # Кнопки
@@ -121,6 +150,7 @@ class ProjectRolesDialog(QDialog):
             # Название роли
             name_item = QTableWidgetItem(role.RoleName)
             name_item.setFlags(name_item.flags() ^ Qt.ItemIsEditable)
+            name_item.setForeground(QBrush(QColor("#FFFFFF")))
             self.table.setItem(row, 0, name_item)
 
             # Дата создания (читаемый формат)
@@ -138,6 +168,7 @@ class ProjectRolesDialog(QDialog):
 
             created_item = QTableWidgetItem(created_text)
             created_item.setFlags(created_item.flags() ^ Qt.ItemIsEditable)
+            created_item.setForeground(QBrush(QColor("#FFFFFF")))
             self.table.setItem(row, 1, created_item)
 
         self.table.resizeColumnsToContents()

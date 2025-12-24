@@ -24,12 +24,6 @@ class KanbanBoard(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        # Заголовок доски
-        title = QLabel("Канбан-доска проекта")
-        title.setFont(QFont("Arial", 18, QFont.Bold))
-        title.setAlignment(Qt.AlignCenter)
-        layout.addWidget(title)
-
         # Scroll area для колонок
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
@@ -38,11 +32,13 @@ class KanbanBoard(QWidget):
         scroll_area.setStyleSheet("""
             QScrollArea {
                 border: none;
+                background-color: #FFFFFF;
             }
         """)
 
         # Контейнер для колонок
         columns_widget = QWidget()
+        columns_widget.setStyleSheet("background-color: #FFFFFF;")
         columns_layout = QHBoxLayout(columns_widget)
         columns_layout.setContentsMargins(0, 16, 0, 16)
         columns_layout.setSpacing(16)
@@ -64,8 +60,8 @@ class KanbanBoard(QWidget):
                 background-color: #F8F9FA;
                 border: 1px solid #E1E5E9;
                 border-radius: 8px;
-                min-width: 250px;
-                max-width: 300px;
+                min-width: 280px;
+                max-width: 280px;
             }
         """)
 
