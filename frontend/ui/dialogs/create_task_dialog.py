@@ -161,6 +161,23 @@ class CreateTaskDialog(QDialog):
         qdate = self.deadline_input.date()
         deadline = date(qdate.year(), qdate.month(), qdate.day())
 
+        # Validate tags format: only letters/digits and commas allowed, no spaces, no empty tags
+        tags_raw = self.tags_input.text()
+        if tags_raw:
+            # No whitespace allowed (space, newlines, tabs)
+            if any(ch.isspace() for ch in tags_raw):
+                QMessageBox.warning(self, "Ошибка валидации", "Теги не должны содержать пробелы или переносы. Используйте запятую ',' как разделитель без пробелов.")
+                return
+            # Only allow alphanumeric characters (Unicode letters/digits) and commas
+            if any(not (ch.isalnum() or ch == ',') for ch in tags_raw):
+                QMessageBox.warning(self, "Ошибка валидации", "Теги могут содержать только буквы, цифры и запятые (запятые разделяют теги).")
+                return
+            parts = tags_raw.split(',')
+            if any(p == '' for p in parts):
+                QMessageBox.warning(self, "Ошибка валидации", "Пустые теги запрещены (уберите лишние запятые или пробелы).")
+                return
+        tags_value = tags_raw or ""
+
         data = TaskCreateDTO(
             Title=self.name_input.text().strip(),
             # Backend requires Text to be a string (not null) — send empty string when description is empty
@@ -168,6 +185,7 @@ class CreateTaskDialog(QDialog):
             DeadLine=deadline,
             TargetId=self.resp_combo.currentData(),
             GroupId=self.group_combo.currentData(),
+            Tags=tags_value,
         )
 
         try:

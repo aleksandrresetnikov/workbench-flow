@@ -187,6 +187,7 @@ class TaskBase(BaseModel):
     StateId: Optional[int] = None
     GroupId: Optional[int] = None
     DeadLine: Optional[date] = None
+    Tags: Optional[str] = ""  # Comma-separated tags; stored as empty string by default
 
 class TaskCreate(TaskBase):
     pass

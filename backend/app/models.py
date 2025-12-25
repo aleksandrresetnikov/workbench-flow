@@ -143,6 +143,7 @@ class Task(Base):
     CreateDate = Column('CreateDate', DateTime(timezone=True), server_default=func.now(), nullable=False)
     IsClosed = Column('IsClosed', Boolean, default=False, nullable=False, index=True)
     DeadLine = Column('DeadLine', Date)
+    Tags = Column('Tags', String(512), nullable=False, server_default="")
     
     # Relationships
     author = relationship("User", back_populates="tasks_authored", foreign_keys=[AuthorId])

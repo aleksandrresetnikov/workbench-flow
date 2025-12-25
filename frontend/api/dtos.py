@@ -129,6 +129,7 @@ class TaskCreateDTO(BaseModel):
     DeadLine: Optional[date] = None
     TargetId: Optional[int] = None
     StateId: Optional[int] = None
+    Tags: Optional[str] = ""  # Comma-separated tags (no spaces or special chars)
 
 class TaskDTO(BaseModel):
     Id: int
@@ -139,6 +140,7 @@ class TaskDTO(BaseModel):
     Status: Optional[str] = None
     CreatedAt: Optional[datetime] = None
     Deadline: Optional[datetime] = None
+    Tags: Optional[str] = None
 
 # ========== File DTOs ==========
 class FileUploadDTO(BaseModel):

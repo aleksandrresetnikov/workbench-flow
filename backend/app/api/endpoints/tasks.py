@@ -85,8 +85,20 @@ async def get_project_tasks_endpoint(
             detail="Project not found"
         )
     
-    tasks = get_project_tasks(db, project_id, closed)
-    return tasks
+    try:
+        tasks = get_project_tasks(db, project_id, closed)
+        return tasks
+    except Exception as e:
+        # If the DB schema is out of date (missing columns), provide a clear error for debugging
+        import sqlalchemy
+        if isinstance(e, sqlalchemy.exc.ProgrammingError):
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=("Database schema mismatch detected (likely a missing migration). "
+                        "Please run: `alembic upgrade head` in the backend and restart the server. "
+                        f"Original error: {str(e)}"),
+            )
+        raise
 
 @router.post("/projects/{project_id}/tasks", response_model=schemas.Task)
 async def create_new_task(

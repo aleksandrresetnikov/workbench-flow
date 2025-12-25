@@ -5,11 +5,16 @@ from PySide6.QtGui import QFont
 from api.dtos import TaskDTO
 
 
+import random
+
 TAG_COLORS = {
     "Дизайн": "#1F3A5F",
     "Баг": "#8B1E3F",
     "UX": "#2D6A4F",
     "Нововведение": "#5A4FCF",
+    # extra colors for variety
+    "Орфография": "#D9480F",
+    "Приоритет": "#0B84A5",
 }
 
 
@@ -57,20 +62,26 @@ class TaskCard(QFrame):
         tags_row = QHBoxLayout()
         tags_row.setSpacing(6)
 
-        # Временно: используем Status как тег
-        tag_text = self.task.Status or "Общее"
-        tag = QLabel(tag_text)
-        tag.setAlignment(Qt.AlignCenter)
-        tag.setStyleSheet(f"""
-            QLabel {{
-                background-color: {TAG_COLORS.get(tag_text, "#13243A")};
-                color: #FFFFFF;
-                border-radius: 6px;
-                padding: 2px 8px;
-                font-size: 11px;
-            }}
-        """)
-        tags_row.addWidget(tag)
-        tags_row.addStretch()
+        # Use Tags from backend if present (comma-separated), otherwise fall back to Status
+        raw_tags = getattr(self.task, 'Tags', None) or ''
+        tags = [t for t in raw_tags.split(',') if t] if raw_tags else []
+        if not tags:
+            tags = [self.task.Status or "Общее"]
 
+        for t in tags:
+            tag = QLabel(t)
+            tag.setAlignment(Qt.AlignCenter)
+            color = TAG_COLORS.get(t, random.choice(list(TAG_COLORS.values())))
+            tag.setStyleSheet(f"""
+                QLabel {{
+                    background-color: {color};
+                    color: #FFFFFF;
+                    border-radius: 6px;
+                    padding: 2px 8px;
+                    font-size: 11px;
+                }}
+            """)
+            tags_row.addWidget(tag)
+
+        tags_row.addStretch()
         layout.addLayout(tags_row)
