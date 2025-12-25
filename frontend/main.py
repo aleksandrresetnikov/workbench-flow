@@ -109,7 +109,7 @@ class AuthApp(QMainWindow):
         email = self.login_screen.email_input.text()
         password = self.login_screen.password_input.text()
         
-        if self.auth_service.login(email, password):
+        if self.auth_service.login(email.replace('\n', '').replace(' ', ''), password):
             if self.auth_service.fetch_current_user():
                 self.show_main_screen()
             else:
