@@ -134,13 +134,15 @@ class TaskCreateDTO(BaseModel):
 class TaskDTO(BaseModel):
     Id: int
     Name: str = Field(alias="Title")
-    Description: Optional[str] = None
+    Description: Optional[str] = Field(default=None, alias="Text")
     ProjectId: Optional[int] = None
     GroupId: Optional[int] = None
     Status: Optional[str] = None
-    CreatedAt: Optional[datetime] = None
-    Deadline: Optional[datetime] = None
+    CreatedAt: Optional[datetime] = Field(default=None, alias="CreateDate")
+    Deadline: Optional[date] = Field(default=None, alias="DeadLine")
     Tags: Optional[str] = None
+    AuthorId: Optional[int] = Field(default=None, alias="AuthorId")
+    TargetId: Optional[int] = Field(default=None, alias="TargetId")
 
 # ========== File DTOs ==========
 class FileUploadDTO(BaseModel):

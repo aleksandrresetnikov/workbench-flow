@@ -52,11 +52,56 @@ class TaskCard(QFrame):
             desc.setStyleSheet("color: #666666; font-size: 12px;")
             layout.addWidget(desc)
 
-        # ---- Deadline ----
-        if self.task.Deadline:
-            deadline = QLabel(f"Дедлайн: {self.task.Deadline.strftime('%d.%m.%Y')}")
-            deadline.setStyleSheet("color: #FF6B6B; font-size: 10px; font-weight: bold;")
-            layout.addWidget(deadline)
+        # ---- Bottom line: Deadline (left) and ownership indicator (right) ----
+        bottom_row = QHBoxLayout()
+        bottom_row.setContentsMargins(0, 6, 0, 0)
+        bottom_row.setSpacing(8)
+
+        # Left: deadline (handle date/datetime/ISO-string)
+        dl_value = getattr(self.task, 'Deadline', None)
+        if dl_value:
+            try:
+                formatted = dl_value.strftime('%d.%m.%Y')
+            except Exception:
+                # Fallback parse ISO string
+                from datetime import datetime as _dt
+                try:
+                    parsed = _dt.fromisoformat(str(dl_value))
+                    formatted = parsed.strftime('%d.%m.%Y')
+                except Exception:
+                    formatted = str(dl_value)
+            dl_label = QLabel(f"Дедлайн: {formatted}")
+            dl_label.setStyleSheet("color: #FF6B6B; font-size: 10px; font-weight: bold;")
+            bottom_row.addWidget(dl_label)
+        else:
+            bottom_row.addWidget(QLabel(""))
+
+        bottom_row.addStretch()
+
+        # Right: ownership indicator if task assigned to current user
+        owner_label = None
+        try:
+            from services import auth_service
+            current = auth_service.current_user
+            if current and getattr(self.task, 'TargetId', None) == getattr(current, 'Id', None):
+                owner_label = QLabel("Ваша")
+                owner_label.setStyleSheet("""
+                    QLabel {
+                        background-color: #0B84A5;
+                        color: #FFFFFF;
+                        border-radius: 6px;
+                        padding: 2px 8px;
+                        font-size: 10px;
+                    }
+                """)
+        except Exception:
+            owner_label = None
+
+        if owner_label:
+            owner_label.setAlignment(Qt.AlignCenter)
+            bottom_row.addWidget(owner_label)
+
+        layout.addLayout(bottom_row)
 
         # ---- Tags ----
         tags_row = QHBoxLayout()
