@@ -1,13 +1,6 @@
 from PySide6.QtWidgets import (
-    QDialog,
-    QVBoxLayout,
-    QLabel,
-    QLineEdit,
-    QTextEdit,
-    QHBoxLayout,
-    QMessageBox,
-    QComboBox,
-    QDateEdit,
+    QDialog, QVBoxLayout, QLabel, QLineEdit, QTextEdit,
+    QHBoxLayout, QMessageBox, QComboBox, QDateEdit
 )
 from PySide6.QtCore import Qt, Signal, QDate
 from datetime import date
@@ -17,163 +10,171 @@ from services.auth_service import AuthService
 from api.tasks import tasks_api
 from api.dtos import TaskCreateDTO, TaskDTO, TaskGroupDTO
 from api.dtos import ProjectMemberWithUserDTO
-from ui.components import ModalCard, FieldLabel, PrimaryButton, SecondaryButton
+from ui.components import ModalCard, PrimaryButton, SecondaryButton
+
+
+FIELD_HEIGHT = 40
+LABEL_STYLE = """
+QLabel {
+    font-size: 13px;
+    color: #1F2937;
+    margin: 0;
+    padding: 0;
+}
+"""
 
 
 class CreateTaskDialog(QDialog):
-    """Диалог создания новой задачи в проекте."""
-
     task_created = Signal(TaskDTO)
 
-    def __init__(self, auth_service: AuthService, project_id: int, members: list[ProjectMemberWithUserDTO], groups: Optional[List[TaskGroupDTO]] = None, preselected_group_id: Optional[int] = None, parent=None):
+    def __init__(
+        self,
+        auth_service: AuthService,
+        project_id: int,
+        members: list[ProjectMemberWithUserDTO],
+        groups: Optional[List[TaskGroupDTO]] = None,
+        preselected_group_id: Optional[int] = None,
+        parent=None,
+    ):
         super().__init__(parent)
+
         self.auth_service = auth_service
         self.project_id = project_id
         self.members = members or []
         self.groups = groups or []
-        self.preselected_group_id = preselected_group_id
 
         self.setWindowTitle("Новая задача")
         self.setModal(True)
         self.setFixedSize(640, 560)
-        self.setStyleSheet("QDialog { background-color: rgba(0, 0, 0, 0.5); }")
 
-        self._setup_ui()
+        self._setup_ui(preselected_group_id)
 
-    def _setup_ui(self):
-        root_layout = QVBoxLayout(self)
-        root_layout.setAlignment(Qt.AlignCenter)
-        root_layout.setContentsMargins(0, 0, 0, 0)
-        root_layout.setSpacing(0)
+    # ---------- helpers ----------
+    def _label(self, text: str) -> QLabel:
+        lbl = QLabel(text)
+        lbl.setStyleSheet(LABEL_STYLE)
+        return lbl
+
+    def _setup_ui(self, preselected_group_id):
+        root = QVBoxLayout(self)
+        root.setAlignment(Qt.AlignCenter)
+        root.setContentsMargins(0, 0, 0, 0)
 
         card = ModalCard()
         card.setFixedWidth(600)
+        card.layout.setSpacing(16)
+        card.layout.setContentsMargins(0, 0, 0, 0)
 
+        # Title
         title = QLabel("Новая задача")
-        title.setObjectName("TitleLabel")
-        title.setAlignment(Qt.AlignLeft)
-        title.setStyleSheet("color: #000000; font-size: 22px; font-weight: bold; margin-bottom: 12px;")
+        title.setStyleSheet("font-size: 22px; font-weight: bold;")
         card.layout.addWidget(title)
 
-        # Name
-        name_label = FieldLabel("Наименование")
-        card.layout.addWidget(name_label)
-
+        # --- Name ---
+        card.layout.addWidget(self._label("Наименование"))
         self.name_input = QLineEdit()
-        self.name_input.setObjectName("InputField")
-        self.name_input.setFixedHeight(44)
+        self.name_input.setFixedHeight(FIELD_HEIGHT)
         card.layout.addWidget(self.name_input)
 
-        # Description
-        desc_label = FieldLabel("Описание")
-        card.layout.addWidget(desc_label)
-
+        # --- Description ---
+        card.layout.addWidget(self._label("Описание"))
         self.desc_input = QTextEdit()
-        self.desc_input.setFixedHeight(120)
+        self.desc_input.setFixedHeight(FIELD_HEIGHT)
+        self.desc_input.setStyleSheet("""
+            QTextEdit {
+                border: 1px solid #C9CDD4;
+                border-radius: 6px;
+                padding: 8px;
+            }
+        """)
         card.layout.addWidget(self.desc_input)
 
-        # Group (required)
-        group_label = FieldLabel("Группа задачи (обязательно)")
-        card.layout.addWidget(group_label)
-
+        # --- Group ---
+        card.layout.addWidget(self._label("Группа задачи (обязательно)"))
         self.group_combo = QComboBox()
-        self.group_combo.setObjectName("ComboBox")
-        self.group_combo.setFixedHeight(40)
-        # Add a placeholder to force explicit selection when no groups exist
+        self.group_combo.setFixedHeight(FIELD_HEIGHT)
+        self.group_combo.addItem("Выберите группу", None)
         for g in self.groups:
-            self.group_combo.addItem(g.Name, userData=g.Id)
-        # Default selection: preselected_group_id or first group
-        if self.preselected_group_id is not None:
-            index = next((i for i, g in enumerate(self.groups) if g.Id == self.preselected_group_id), 0)
-            self.group_combo.setCurrentIndex(index)
-        elif self.groups:
-            self.group_combo.setCurrentIndex(0)
+            self.group_combo.addItem(g.Name, g.Id)
+
+        if preselected_group_id:
+            for i in range(self.group_combo.count()):
+                if self.group_combo.itemData(i) == preselected_group_id:
+                    self.group_combo.setCurrentIndex(i)
+                    break
 
         card.layout.addWidget(self.group_combo)
 
-        # Deadline
-        deadline_label = FieldLabel("Сроки выполнения")
-        card.layout.addWidget(deadline_label)
-
+        # --- Deadline ---
+        card.layout.addWidget(self._label("Сроки выполнения"))
         self.deadline_input = QDateEdit()
+        self.deadline_input.setFixedHeight(FIELD_HEIGHT)
         self.deadline_input.setCalendarPopup(True)
-        self.deadline_input.setDisplayFormat("dd.MM.yyyy")
         self.deadline_input.setDate(QDate.currentDate())
-        self.deadline_input.setFixedHeight(36)
         card.layout.addWidget(self.deadline_input)
 
-        # Responsible
-        responsible_label = FieldLabel("Ответственный (опционально)")
-        card.layout.addWidget(responsible_label)
-
+        # --- Responsible ---
+        card.layout.addWidget(self._label("Ответственный (опционально)"))
         self.resp_combo = QComboBox()
-        self.resp_combo.setObjectName("ComboBox")
-        self.resp_combo.setFixedHeight(40)
-        self.resp_combo.addItem("Не назначено", userData=None)
+        self.resp_combo.setFixedHeight(FIELD_HEIGHT)
+        self.resp_combo.addItem("Не назначено", None)
         for m in self.members:
-            user = m.member
-            full_name = f"{user.FirstName or ''} {user.LastName or ''}".strip() or user.Username
-            display = f"{full_name} — {user.Email}"
-            self.resp_combo.addItem(display, userData=user.Id)
+            u = m.member
+            name = f"{u.FirstName or ''} {u.LastName or ''}".strip() or u.Username
+            self.resp_combo.addItem(f"{name} — {u.Email}", u.Id)
         card.layout.addWidget(self.resp_combo)
 
-        # Tags placeholder (empty)
-        tags_label = FieldLabel("Теги (пока пусто)")
-        card.layout.addWidget(tags_label)
-
+        # --- Tags ---
+        card.layout.addWidget(self._label("Теги (пока пусто)"))
         self.tags_input = QLineEdit()
-        self.tags_input.setObjectName("InputField")
+        self.tags_input.setFixedHeight(FIELD_HEIGHT)
         self.tags_input.setPlaceholderText("Оставьте пустым")
-        self.tags_input.setFixedHeight(36)
         card.layout.addWidget(self.tags_input)
 
-        # Buttons
-        buttons_row = QHBoxLayout()
-        buttons_row.setContentsMargins(0, 0, 0, 0)
-        buttons_row.setSpacing(12)
+        # --- Buttons ---
+        buttons = QHBoxLayout()
+        buttons.setSpacing(12)
 
         create_btn = PrimaryButton("Создать")
-        create_btn.setFixedHeight(40)
         create_btn.clicked.connect(self._on_create_clicked)
-        buttons_row.addWidget(create_btn)
-
-        buttons_row.addStretch()
 
         cancel_btn = SecondaryButton("Отмена")
-        cancel_btn.setFixedHeight(40)
         cancel_btn.clicked.connect(self.reject)
-        buttons_row.addWidget(cancel_btn)
 
-        card.layout.addLayout(buttons_row)
+        buttons.addWidget(create_btn)
+        buttons.addStretch()
+        buttons.addWidget(cancel_btn)
 
-        root_layout.addWidget(card)
+        card.layout.addLayout(buttons)
+        root.addWidget(card)
 
+    # ---------- actions ----------
     def _on_create_clicked(self):
-        title = self.name_input.text().strip()
-        if not title:
-            QMessageBox.warning(self, "Ошибка валидации", "Наименование задачи обязательно.")
+        if not self.name_input.text().strip():
+            QMessageBox.warning(self, "Ошибка", "Введите наименование задачи")
             return
 
-        text = self.desc_input.toPlainText().strip() or None
-        deadline_qdate = self.deadline_input.date()
-        deadline_py = date(deadline_qdate.year(), deadline_qdate.month(), deadline_qdate.day()) if deadline_qdate.isValid() else None
-        target = self.resp_combo.currentData()  # may be None
-        group_id = self.group_combo.currentData()
-        if group_id is None:
-            QMessageBox.warning(self, "Ошибка валидации", "Пожалуйста, выберите группу задачи.")
+        if self.group_combo.currentData() is None:
+            QMessageBox.warning(self, "Ошибка", "Выберите группу задачи")
             return
+
+        qdate = self.deadline_input.date()
+        deadline = date(qdate.year(), qdate.month(), qdate.day())
 
         data = TaskCreateDTO(
-            Title=title,
-            Text=text,
-            DeadLine=deadline_py,
-            TargetId=target,
-            GroupId=group_id,
+            Title=self.name_input.text().strip(),
+            # Backend requires Text to be a string (not null) — send empty string when description is empty
+            Text=self.desc_input.toPlainText().strip() or "",
+            DeadLine=deadline,
+            TargetId=self.resp_combo.currentData(),
+            GroupId=self.group_combo.currentData(),
         )
 
         try:
-            created = tasks_api.create_task(self.project_id, data, self.auth_service.token)
-            self.task_created.emit(created)
+            task = tasks_api.create_task(
+                self.project_id, data, self.auth_service.token
+            )
+            self.task_created.emit(task)
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Ошибка", f"Не удалось создать задачу:\n{e}")
+            QMessageBox.critical(self, "Ошибка", str(e))

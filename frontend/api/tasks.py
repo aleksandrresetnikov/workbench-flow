@@ -19,10 +19,25 @@ class TasksAPI:
         try:
             response = requests.request(method, url, headers=headers, **kwargs)
             response.raise_for_status()
-            return response.json()
+            # Try to return json payload, but fall back to raw text
+            try:
+                return response.json()
+            except Exception:
+                return response.text
         except requests.exceptions.RequestException as e:
-            print(f"API request failed: {e}")
-            raise
+            # If the response is available, include its body for better diagnostics (e.g., 422 validation errors)
+            resp = getattr(e, 'response', None)
+            detail = None
+            if resp is not None:
+                try:
+                    detail = resp.json()
+                except Exception:
+                    detail = resp.text
+            msg = f"API request failed: {e}"
+            if detail is not None:
+                msg = f"API request failed: {detail}"
+            print(msg)
+            raise Exception(msg) from e
     
     def get_tasks(self, project_id: int, token: str) -> List[TaskDTO]:
         """Get tasks for a project"""
