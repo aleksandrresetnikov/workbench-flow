@@ -269,7 +269,7 @@ class ProjectScreen(QWidget):
                     child.widget().deleteLater()
 
         # Создать канбан-доску (передаём callback для кнопки '+' в колонках)
-        self.kanban_board = KanbanBoard(self.task_groups, self.tasks, on_add_task=self._open_create_task_dialog_with_group)
+        self.kanban_board = KanbanBoard(self.task_groups, self.tasks, on_add_task=self._open_create_task_dialog_with_group, on_group_change=self._handle_task_group_change)
         self.kanban_area.layout().addWidget(self.kanban_board)
 
     def _update_header_info(self):
@@ -313,10 +313,27 @@ class ProjectScreen(QWidget):
                     child.widget().deleteLater()
 
         # Создать канбан-доску (передаём callback для кнопки '+' в колонках)
-        self.kanban_board = KanbanBoard(self.task_groups, self.tasks, on_add_task=self._open_create_task_dialog_with_group)
+        self.kanban_board = KanbanBoard(self.task_groups, self.tasks, on_add_task=self._open_create_task_dialog_with_group, on_group_change=self._handle_task_group_change)
         self.kanban_area.layout().addWidget(self.kanban_board)
 
     # ----- Events -----
+
+    def _handle_task_group_change(self, task_id: int, new_group_id: int):
+        """Handle task group change from dropdown"""
+        print(f"DEBUG: Moving task {task_id} to group {new_group_id}")
+        try:
+            from api.dtos import TaskUpdateDTO
+            update_data = TaskUpdateDTO(GroupId=new_group_id)
+            print(f"DEBUG: Update data: {update_data.dict(exclude_none=True)}")
+            result = tasks_api.update_task(task_id, update_data, self.auth_service.token)
+            print(f"DEBUG: Update successful: {result}")
+            # Reload data to refresh the board
+            self._load_data()
+        except Exception as e:
+            print(f"Error updating task group: {e}")
+            import traceback
+            traceback.print_exc()
+            QMessageBox.critical(self, "Ошибка", f"Не удалось переместить задачу: {e}")
 
     def _on_avatar_clicked(self, event: QMouseEvent):
         if self.dropdown.isVisible():

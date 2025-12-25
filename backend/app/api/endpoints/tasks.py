@@ -16,7 +16,7 @@ from app import schemas, models
 
 router = APIRouter()
 
-@router.get("/tasks/{task_id}", response_model=schemas.TaskWithDetails)
+@router.get("/{task_id}", response_model=schemas.TaskWithDetails)
 async def get_single_task(
     task_id: int,
     current_user: models.User = Depends(get_current_active_user),
@@ -41,7 +41,7 @@ async def get_single_task(
     
     return task
 
-@router.get("/tasks/", response_model=List[schemas.Task])
+@router.get("/", response_model=List[schemas.Task])
 async def get_all_tasks(
     skip: int = 0,
     limit: int = 100,
@@ -52,7 +52,7 @@ async def get_all_tasks(
     tasks = get_tasks(db, skip=skip, limit=limit)
     return tasks
 
-@router.get("/tasks/my", response_model=List[schemas.TaskWithDetails])
+@router.get("/my", response_model=List[schemas.TaskWithDetails])
 async def get_my_tasks(
     closed: Optional[bool] = None,
     current_user: models.User = Depends(get_current_active_user),
@@ -149,7 +149,7 @@ async def create_new_task(
     task = create_task(db, task_data, current_user.Id)
     return task
 
-@router.put("/tasks/{task_id}", response_model=schemas.Task)
+@router.put("/{task_id}", response_model=schemas.Task)
 async def update_existing_task(
     task_id: int,
     task_update: schemas.TaskUpdate,
@@ -207,7 +207,7 @@ async def update_existing_task(
     
     return updated_task
 
-@router.delete("/tasks/{task_id}")
+@router.delete("/{task_id}")
 async def delete_existing_task(
     task_id: int,
     current_user: models.User = Depends(get_current_active_user),
@@ -239,7 +239,7 @@ async def delete_existing_task(
     
     return {"message": "Task deleted successfully"}
 
-@router.post("/tasks/{task_id}/close")
+@router.post("/{task_id}/close")
 async def close_task(
     task_id: int,
     current_user: models.User = Depends(get_current_active_user),
@@ -274,7 +274,7 @@ async def close_task(
     
     return {"message": "Task closed successfully", "task": updated_task}
 
-@router.post("/tasks/{task_id}/reopen")
+@router.post("/{task_id}/reopen")
 async def reopen_task(
     task_id: int,
     current_user: models.User = Depends(get_current_active_user),

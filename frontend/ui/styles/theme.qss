@@ -355,3 +355,17 @@ QPushButton#DropdownButton {
 QPushButton#DropdownButton:hover {
     background-color: #F5F5F5;
 }
+
+/* More Button Styles (three dots icon) */
+QPushButton#MoreButton {
+    background-color: transparent;
+    border: none;
+    padding: 4px;
+    min-width: 20px;
+    min-height: 20px;
+}
+
+QPushButton#MoreButton:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+}

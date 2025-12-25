@@ -1,8 +1,9 @@
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QFrame, QHBoxLayout
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QFrame, QHBoxLayout, QPushButton
+from PySide6.QtCore import Qt, QPoint, Signal
+from PySide6.QtGui import QFont, QPixmap, QMouseEvent
 
 from api.dtos import TaskDTO
+from ui.components.dropdown import TaskGroupDropdown
 
 
 import random
@@ -19,10 +20,12 @@ TAG_COLORS = {
 
 
 class TaskCard(QFrame):
+    group_changed = Signal(int, int)  # task_id, new_group_id
 
-    def __init__(self, task: TaskDTO, parent=None):
+    def __init__(self, task: TaskDTO, groups: list, parent=None):
         super().__init__(parent)
         self.task = task
+        self.groups = groups
         self._setup_ui()
 
     def _setup_ui(self):
@@ -40,10 +43,32 @@ class TaskCard(QFrame):
         layout.setSpacing(8)
 
         # ---- Title ----
+        title_layout = QHBoxLayout()
+        title_layout.setSpacing(8)
+        
         title = QLabel(self.task.Name)
         title.setFont(QFont("Arial", 11, QFont.Bold))
         title.setStyleSheet("color: #1C1C1C;")
-        layout.addWidget(title)
+        title_layout.addWidget(title)
+        
+        title_layout.addStretch()
+        
+        # Three dots icon
+        self.more_btn = QPushButton()
+        self.more_btn.setObjectName("MoreButton")
+        self.more_btn.setFixedSize(20, 20)
+        self.more_btn.setCursor(Qt.PointingHandCursor)
+        try:
+            pixmap = QPixmap("resources/more_icon.png")
+            if not pixmap.isNull():
+                pixmap = pixmap.scaled(16, 16, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                self.more_btn.setIcon(pixmap)
+        except:
+            self.more_btn.setText("⋮")  # Fallback text
+        self.more_btn.clicked.connect(self.on_more_clicked)
+        title_layout.addWidget(self.more_btn)
+        
+        layout.addLayout(title_layout)
 
         # ---- Description ----
         if self.task.Description:
@@ -130,3 +155,22 @@ class TaskCard(QFrame):
 
         tags_row.addStretch()
         layout.addLayout(tags_row)
+
+    def on_more_clicked(self):
+        """Handle three-dots button click"""
+        if not hasattr(self, 'dropdown'):
+            self.dropdown = TaskGroupDropdown(self.groups, self.task.GroupId, self)
+            self.dropdown.group_selected.connect(self.on_group_selected)
+        
+        # Position dropdown below the button
+        btn_global_pos = self.more_btn.mapToGlobal(QPoint(0, 0))
+        dropdown_x = btn_global_pos.x() - self.dropdown.width() + self.more_btn.width()
+        dropdown_y = btn_global_pos.y() + self.more_btn.height() + 5
+        
+        self.dropdown.move(dropdown_x, dropdown_y)
+        self.dropdown.show()
+    
+    def on_group_selected(self, group_id: int):
+        """Handle group selection from dropdown"""
+        self.dropdown.hide()
+        self.group_changed.emit(self.task.Id, group_id)
