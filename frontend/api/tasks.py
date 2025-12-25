@@ -46,9 +46,7 @@ class TasksAPI:
     
     def update_task(self, task_id: int, task_data: TaskUpdateDTO, token: str) -> TaskDTO:
         """Update a task"""
-        print(f"DEBUG API: Updating task {task_id}")
         payload = task_data.dict(exclude_none=True)
-        print(f"DEBUG API: Payload: {payload}")
         # ensure date objects are serialized
         if "DeadLine" in payload and payload["DeadLine"] is not None:
             dl = payload["DeadLine"]
@@ -56,10 +54,7 @@ class TasksAPI:
                 payload["DeadLine"] = dl.isoformat()
             except Exception:
                 pass
-        url = f"/api/tasks/{task_id}"
-        print(f"DEBUG API: Calling PUT {url}")
-        response = self._make_request("PUT", url, token=token, json=payload)
-        print(f"DEBUG API: Response: {response}")
+        response = self._make_request("PUT", f"/api/tasks/{task_id}", token=token, json=payload)
         return TaskDTO(**response)
 
 # Singleton instance
