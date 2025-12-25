@@ -152,6 +152,8 @@ class TaskDTO(BaseModel):
     Tags: Optional[str] = None
     AuthorId: Optional[int] = Field(default=None, alias="AuthorId")
     TargetId: Optional[int] = Field(default=None, alias="TargetId")
+    # Task closed/completed flag from backend
+    IsClosed: Optional[bool] = Field(default=None, alias="IsClosed")
 
 # ========== File DTOs ==========
 class FileUploadDTO(BaseModel):

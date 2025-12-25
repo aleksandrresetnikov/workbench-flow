@@ -289,6 +289,17 @@ QFrame#ModalCard QLabel {
     background-color: transparent;
 }
 
+/* Ensure standard QMessageBox text is visible (app-wide QLabel color is white by default)
+   Force message boxes to use dark text on light background so dialogs like 'Готово' are readable */
+QMessageBox {
+    background-color: #FFFFFF;
+    color: #000000;
+}
+
+QMessageBox QLabel {
+    color: #000000;
+}
+
 /* Text Edit Styles */
 QTextEdit {
     background-color: #FFFFFF;

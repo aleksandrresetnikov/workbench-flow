@@ -20,6 +20,9 @@ class KanbanBoard(QWidget):
         self.tasks = tasks
         self.on_add_task = on_add_task
         self.on_group_change = on_group_change
+        # Keep references to group header labels and column widgets for dynamic updates
+        self.group_labels = {}
+        self.columns = {}
         self._setup_ui()
 
     def _setup_ui(self):
@@ -89,6 +92,10 @@ class KanbanBoard(QWidget):
         header_row.addWidget(group_label)
         header_row.addStretch()
 
+        # store for dynamic updates (e.g., dim when all tasks are completed)
+        self.group_labels[group.Id] = group_label
+        self.columns[group.Id] = column
+
         add_btn = QPushButton("+")
         add_btn.setObjectName("AddTaskButton")
         add_btn.setFixedSize(28, 28)
@@ -116,6 +123,11 @@ class KanbanBoard(QWidget):
                 task_card = TaskCard(task, self.task_groups)
                 if callable(self.on_group_change):
                     task_card.group_changed.connect(self.on_group_change)
+                # Connect to completion signal so we can update the group header appearance
+                try:
+                    task_card.completed.connect(lambda tid, gid=group.Id: self._on_task_completed_in_group(gid))
+                except Exception:
+                    pass
                 layout.addWidget(task_card)
         else:
             # Заглушка, если нет задач
@@ -133,4 +145,41 @@ class KanbanBoard(QWidget):
 
         layout.addStretch()  # Чтобы задачи были сверху
 
+        # Initial header state update (in case all tasks already closed)
+        self._on_task_completed_in_group(group.Id)
+
         return column
+
+    def _on_task_completed_in_group(self, group_id: int):
+        """Update group header appearance when a task in the group completes."""
+        col = self.columns.get(group_id)
+        lbl = self.group_labels.get(group_id)
+        if col is None or lbl is None:
+            return
+        # Check all TaskCard widgets in the column: if all are closed, dim header
+        all_closed = True
+        layout = col.layout()
+        for i in range(layout.count()):
+            w = layout.itemAt(i).widget()
+            if isinstance(w, TaskCard):
+                if not getattr(w.task, 'IsClosed', False):
+                    all_closed = False
+                    break
+        if all_closed:
+            print(f"[UI] All tasks in group {group_id} are closed — dimming header")
+            lbl.setStyleSheet('''
+                QLabel#GroupLabel {
+                    font-size: 16px;
+                    font-weight: bold;
+                    color: #999999;
+                }
+            ''')
+        else:
+            print(f"[UI] Group {group_id} has open tasks — using normal header style")
+            lbl.setStyleSheet('''
+                QLabel#GroupLabel {
+                    font-size: 16px;
+                    font-weight: bold;
+                    color: #333333;
+                }
+            ''')
