@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, Signal, QPoint
 from PySide6.QtGui import QPixmap, QFont, QMouseEvent
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from services.auth_service import AuthService
 from api.projects import projects_api
@@ -161,10 +162,24 @@ class MainScreen(QWidget):
         return table
 
     def load_projects(self):
-        """Load and display user's projects"""
+        """Load and display user's projects (members fetched concurrently)"""
         try:
             self.projects = projects_api.get_my_projects(self.auth_service.token)
             self.table.setRowCount(len(self.projects))
+
+            # Fetch members for all projects concurrently to reduce wall time when there are many projects
+            project_ids = [p.Id for p in self.projects]
+            members_map = {}
+            if project_ids:
+                with ThreadPoolExecutor(max_workers=min(8, len(project_ids))) as ex:
+                    futures = {ex.submit(projects_api.get_project_members, pid, self.auth_service.token): pid for pid in project_ids}
+                    for fut in as_completed(futures):
+                        pid = futures[fut]
+                        try:
+                            members_map[pid] = fut.result()
+                        except Exception as e:
+                            print(f"Error fetching members for project {pid}: {e}")
+                            members_map[pid] = []
 
             for i, project in enumerate(self.projects):
                 # Index
@@ -197,14 +212,14 @@ class MainScreen(QWidget):
 
                 # Role and Participants
                 try:
-                    members = projects_api.get_project_members(project.Id, self.auth_service.token)
+                    members = members_map.get(project.Id, [])
                     user_member = next((m for m in members if m.MemnerId == self.auth_service.current_user.Id), None)
                     is_owner = project.OwnerId == self.auth_service.current_user.Id
                     access_level = user_member.AccessLevel if user_member else "Common"
                     role = translate_access_level(access_level, is_owner)
                     participants = len(members)
                 except Exception as e:
-                    print(f"Error fetching members for project {project.Id}: {e}")
+                    print(f"Error processing members for project {project.Id}: {e}")
                     role = "Участник"
                     participants = 0
                     is_owner = False

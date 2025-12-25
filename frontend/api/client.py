@@ -20,9 +20,8 @@ class APIClient:
     
     def health_check(self) -> Any:
         """Check API health"""
-        import requests
         try:
-            response = requests.get(f"{auth_api.base_url}/health")
+            response = auth_api.session.get(f"{auth_api.base_url}/health", timeout=auth_api.timeout)
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
