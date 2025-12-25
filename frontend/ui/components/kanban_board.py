@@ -14,11 +14,12 @@ class KanbanBoard(QWidget):
     Компонент канбан-доски с колонками как task groups и задачами как карточками.
     """
 
-    def __init__(self, task_groups: list[TaskGroupDTO], tasks: list[TaskDTO], on_add_task: Optional[Callable[[int], None]] = None, parent=None):
+    def __init__(self, task_groups: list[TaskGroupDTO], tasks: list[TaskDTO], on_add_task: Optional[Callable[[int], None]] = None, on_move_task: Optional[Callable[[int, int], None]] = None, parent=None):
         super().__init__(parent)
         self.task_groups = task_groups
         self.tasks = tasks
         self.on_add_task = on_add_task
+        self.on_move_task = on_move_task
         self._setup_ui()
 
     def _setup_ui(self):
@@ -112,7 +113,7 @@ class KanbanBoard(QWidget):
         group_tasks = [task for task in self.tasks if task.GroupId == group.Id]
         if group_tasks:
             for task in group_tasks:
-                task_card = TaskCard(task)
+                task_card = TaskCard(task, groups=self.task_groups, on_move=self.on_move_task)
                 layout.addWidget(task_card)
         else:
             # Заглушка, если нет задач

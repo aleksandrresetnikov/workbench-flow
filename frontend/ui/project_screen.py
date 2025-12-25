@@ -255,6 +255,7 @@ class ProjectScreen(QWidget):
 
             self._update_header_info()
             self._update_content()
+            self._bind_board_callbacks()
         except Exception as e:
             print(f"Error loading project {self.project_id}: {e}")
             QMessageBox.critical(self, "Ошибка", f"Не удалось загрузить проект: {e}")
@@ -330,6 +331,26 @@ class ProjectScreen(QWidget):
             self.dropdown.show()
         event.accept()
 
+    def _move_task_to_group(self, task_id: int, group_id: int):
+        """Move task to another group and refresh board"""
+        try:
+            tasks_api.move_task(task_id, group_id, self.auth_service.token)
+            # refresh tasks from server
+            self.tasks = tasks_api.get_tasks(self.project_id, self.auth_service.token)
+            self._update_content()
+            self._bind_board_callbacks()
+        except Exception as e:
+            print(f"Error moving task {task_id} to group {group_id}: {e}")
+            QMessageBox.warning(self, "Ошибка", f"Не удалось переместить задачу: {e}")
+
+    def _bind_board_callbacks(self):
+        """Ensure board callbacks (e.g., move) are bound to the current board instance."""
+        if hasattr(self, 'kanban_board') and self.kanban_board is not None:
+            try:
+                self.kanban_board.on_move_task = self._move_task_to_group
+            except Exception:
+                pass
+
     def _open_members_dialog(self):
         dialog = ProjectMembersDialog(
             auth_service=self.auth_service,
@@ -351,6 +372,7 @@ class ProjectScreen(QWidget):
             # обновляем список задач и перерисовываем доску
             self.tasks.append(task)
             self._update_content()
+            self._bind_board_callbacks()
 
         dialog.task_created.connect(on_task_created)
         dialog.exec()
@@ -368,6 +390,7 @@ class ProjectScreen(QWidget):
         def on_task_created(task):
             self.tasks.append(task)
             self._update_content()
+            self._bind_board_callbacks()
 
         dialog.task_created.connect(on_task_created)
         dialog.exec()
@@ -393,6 +416,7 @@ class ProjectScreen(QWidget):
             self.task_groups = task_groups_api.get_task_groups_for_project(self.project_id, self.auth_service.token)
             self.tasks = tasks_api.get_tasks(self.project_id, self.auth_service.token)
             self._update_content()
+            self._bind_board_callbacks()
         except Exception as e:
             print(f"Error reloading groups/tasks: {e}")
             QMessageBox.warning(self, "Внимание", f"Не удалось обновить группы/задачи после изменений:\n{e}")

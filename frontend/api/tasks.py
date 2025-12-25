@@ -57,5 +57,22 @@ class TasksAPI:
         response = self._make_request("POST", f"/api/tasks/projects/{project_id}/tasks", token=token, json=payload)
         return TaskDTO(**response)
 
+    def update_task(self, task_id: int, task_update: "TaskUpdateDTO", token: str) -> TaskDTO:
+        """Update an existing task"""
+        payload = task_update.dict(exclude_none=True)
+        if "DeadLine" in payload and payload["DeadLine"] is not None:
+            dl = payload["DeadLine"]
+            try:
+                payload["DeadLine"] = dl.isoformat()
+            except Exception:
+                pass
+        response = self._make_request("PUT", f"/api/tasks/{task_id}", token=token, json=payload)
+        return TaskDTO(**response)
+
+    def move_task(self, task_id: int, group_id: int, token: str) -> TaskDTO:
+        """Convenience method to move a task to another group"""
+        upd = TaskUpdateDTO(GroupId=group_id)
+        return self.update_task(task_id, upd, token)
+
 # Singleton instance
 tasks_api = TasksAPI()

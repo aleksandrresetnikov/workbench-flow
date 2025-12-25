@@ -131,6 +131,16 @@ class TaskCreateDTO(BaseModel):
     StateId: Optional[int] = None
     Tags: Optional[str] = ""  # Comma-separated tags (no spaces or special chars)
 
+class TaskUpdateDTO(BaseModel):
+    Title: Optional[str] = None
+    Text: Optional[str] = None
+    GroupId: Optional[int] = None
+    DeadLine: Optional[date] = None
+    TargetId: Optional[int] = None
+    StateId: Optional[int] = None
+    IsClosed: Optional[bool] = None
+    Tags: Optional[str] = None
+
 class TaskDTO(BaseModel):
     Id: int
     Name: str = Field(alias="Title")

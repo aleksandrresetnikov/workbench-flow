@@ -1,8 +1,9 @@
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QFrame, QHBoxLayout
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont
+from typing import Optional, Callable, List
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QFrame, QHBoxLayout, QPushButton, QFrame, QMessageBox
+from PySide6.QtCore import Qt, QPoint
+from PySide6.QtGui import QFont, QPixmap, QIcon
 
-from api.dtos import TaskDTO
+from api.dtos import TaskDTO, TaskGroupDTO
 
 
 import random
@@ -20,9 +21,11 @@ TAG_COLORS = {
 
 class TaskCard(QFrame):
 
-    def __init__(self, task: TaskDTO, parent=None):
+    def __init__(self, task: TaskDTO, groups: Optional[List[TaskGroupDTO]] = None, on_move: Optional[Callable[[int, int], None]] = None, parent=None):
         super().__init__(parent)
         self.task = task
+        self.groups = groups or []
+        self.on_move = on_move
         self._setup_ui()
 
     def _setup_ui(self):
@@ -39,11 +42,35 @@ class TaskCard(QFrame):
         layout.setContentsMargins(12, 10, 12, 10)
         layout.setSpacing(8)
 
-        # ---- Title ----
+        # ---- Header row: Title + More button ----
+        header_row = QHBoxLayout()
+        header_row.setContentsMargins(0, 0, 0, 0)
+        header_row.setSpacing(8)
+
         title = QLabel(self.task.Name)
         title.setFont(QFont("Arial", 11, QFont.Bold))
         title.setStyleSheet("color: #1C1C1C;")
-        layout.addWidget(title)
+        header_row.addWidget(title)
+        header_row.addStretch()
+
+        # More button (three dots)
+        try:
+            more_btn = QPushButton()
+            more_btn.setObjectName("MoreButton")
+            more_btn.setCursor(Qt.PointingHandCursor)
+            more_btn.setFixedSize(28, 24)
+            try:
+                pix = QPixmap("resources/more_icon.png")
+                if not pix.isNull():
+                    more_btn.setIcon(QIcon(pix))
+            except Exception:
+                more_btn.setText("⋯")
+
+            header_row.addWidget(more_btn)
+        except Exception:
+            more_btn = None
+
+        layout.addLayout(header_row)
 
         # ---- Description ----
         if self.task.Description:
@@ -52,6 +79,44 @@ class TaskCard(QFrame):
             desc.setStyleSheet("color: #666666; font-size: 12px;")
             layout.addWidget(desc)
 
+        # connect more button to popup (if available)
+        if 'more_btn' in locals() and more_btn is not None:
+            def _show_popup():
+                popup = QFrame(self, flags=Qt.Popup | Qt.FramelessWindowHint)
+                popup.setObjectName("TaskMorePopup")
+                popup.setStyleSheet("QFrame#TaskMorePopup { background-color: #FFFFFF; border: 1px solid #E6E6E6; border-radius: 6px; }")
+                popup.setFixedWidth(220)
+                from PySide6.QtWidgets import QVBoxLayout
+                pop_layout = QVBoxLayout(popup)
+                pop_layout.setContentsMargins(8, 8, 8, 8)
+                pop_layout.setSpacing(4)
+
+                # list groups except the current one
+                for g in self.groups:
+                    if g.Id == getattr(self.task, 'GroupId', None):
+                        continue
+                    btn = QPushButton(g.Name)
+                    btn.setObjectName("PopupButton")
+                    btn.setCursor(Qt.PointingHandCursor)
+                    btn.clicked.connect(lambda _, gid=g.Id: _on_group_selected(gid, popup))
+                    pop_layout.addWidget(btn)
+
+                # position popup under the button
+                btn_pos = more_btn.mapToGlobal(QPoint(0, more_btn.height()))
+                popup.move(btn_pos)
+                popup.show()
+
+            def _on_group_selected(group_id: int, popup_widget: QFrame):
+                popup_widget.hide()
+                if callable(self.on_move):
+                    try:
+                        self.on_move(self.task.Id, group_id)
+                    except Exception as e:
+                        QMessageBox.warning(self, "Ошибка", f"Не удалось переместить задачу: {e}")
+                else:
+                    QMessageBox.information(self, "Перемещение", "Функция перемещения не реализована в этом месте")
+
+            more_btn.clicked.connect(_show_popup)
         # ---- Bottom line: Deadline (left) and ownership indicator (right) ----
         bottom_row = QHBoxLayout()
         bottom_row.setContentsMargins(0, 6, 0, 0)
