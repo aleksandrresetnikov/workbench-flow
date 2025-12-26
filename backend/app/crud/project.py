@@ -34,7 +34,7 @@ def create_project(db: Session, project: schemas.ProjectCreate, owner_id: int) -
     db.refresh(db_project)
     
     # Автоматически добавляем владельца как админа проекта
-    add_project_member(db, db_project.Id, owner_id, schemas.ProjectRole.ADMIN)
+    add_project_member(db, db_project.Id, owner_id, "Admin")
     
     return db_project
 

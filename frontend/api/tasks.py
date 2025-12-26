@@ -78,6 +78,19 @@ class TasksAPI:
         response = self._make_request("GET", f"/api/tasks/projects/{project_id}/tasks", token=token)
         return [TaskDTO(**task) for task in response]
     
+    def create_task(self, project_id: int, task_data: TaskCreateDTO, token: str) -> TaskDTO:
+        """Create a new task in a project"""
+        payload = task_data.dict(exclude_none=True)
+        # ensure date objects are serialized
+        if "DeadLine" in payload and payload["DeadLine"] is not None:
+            dl = payload["DeadLine"]
+            try:
+                payload["DeadLine"] = dl.isoformat()
+            except Exception:
+                pass
+        response = self._make_request("POST", f"/api/tasks/projects/{project_id}/tasks", token=token, json=payload)
+        return TaskDTO(**response)
+    
     def update_task(self, task_id: int, task_data: TaskUpdateDTO, token: str) -> TaskDTO:
         """Update a task"""
         payload = task_data.dict(exclude_none=True)
