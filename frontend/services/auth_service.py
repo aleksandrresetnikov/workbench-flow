@@ -9,6 +9,8 @@ class AuthService:
     def __init__(self):
         self._token: Optional[str] = None
         self._current_user: Optional[UserDTO] = None
+        # Temporarily hold credentials after registration to allow auto-login after OTP confirmation
+        self._pending_credentials: Optional[dict] = None
 
     @property
     def token(self) -> Optional[str]:
@@ -19,20 +21,33 @@ class AuthService:
         return self._current_user
 
     def register_user(self, username: str, email: str, password: str) -> bool:
-        """Register a new user"""
+        """Register a new user and keep pending credentials for auto-login"""
         user_data = UserCreateDTO(Username=username, Email=email, Password=password)
         try:
             auth_api.register_user(user_data)
+            # Store credentials until OTP is confirmed so we can auto-login
+            self._pending_credentials = {"username": username, "email": email, "password": password}
             return True
         except Exception as e:
             print(f"Registration failed: {e}")
+            self._pending_credentials = None
             return False
 
     def confirm_otp(self, email: str, code: str) -> bool:
-        """Confirm OTP code"""
+        """Confirm OTP code and attempt to login if we have pending credentials"""
         otp_data = OtpConfirmDTO(email=email, code=code)
         try:
             auth_api.confirm_otp(otp_data)
+            # Try to auto-login if possible
+            if self._pending_credentials:
+                creds = self._pending_credentials
+                success = self.login(creds.get("username"), creds.get("password"))
+                if success:
+                    self._pending_credentials = None
+                    return True
+                else:
+                    print("Auto-login after OTP confirmation failed")
+                    return False
             return True
         except Exception as e:
             print(f"OTP confirmation failed: {e}")

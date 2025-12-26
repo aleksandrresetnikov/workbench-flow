@@ -18,6 +18,8 @@ class AuthApp(QMainWindow):
 
         # Initialize services
         self.auth_service = auth_service
+        # Pending registration credentials (used to attempt auto-login after successful OTP confirmation)
+        self._pending_registration: dict | None = None
 
         # Screens cache
         self.main_screen: MainScreen | None = None
@@ -123,16 +125,18 @@ class AuthApp(QMainWindow):
 
     def handle_registration(self):
         """Handle registration attempt"""
+        username = self.registration_screen.username_input.text()
         email = self.registration_screen.email_input.text()
         password = self.registration_screen.password_input.text()
         
-        if not email or not password:
+        if not username or not email or not password:
             error_msg = "Пожалуйста, заполните все поля."
             self.registration_screen.show_error(error_msg)
             return
         
-        if self.auth_service.register_user(email, email, password):
-            # Registration successful, show OTP confirmation
+        if self.auth_service.register_user(username, email, password):
+            # Registration successful, store credentials to allow auto-login after confirmation
+            self._pending_registration = {"email": email, "password": password}
             self.show_otp_confirmation(email)
         else:
             error_msg = "Не удалось зарегистрироваться. Проверьте данные и попробуйте снова."
@@ -145,16 +149,40 @@ class AuthApp(QMainWindow):
         email = self.otp_screen.email
         
         if len(otp_code) != 6:
-            print("Please enter all 6 digits")
+            self.otp_screen.show_error("Пожалуйста, введите 6 цифр")
             return
         
+        self.otp_screen.clear_error()
         if self.auth_service.confirm_otp(email, otp_code):
-            # OTP confirmation successful, user is now authorized
-            if self.auth_service.fetch_current_user():
-                self.show_main_screen()
-            else:
-                print("Failed to fetch user after OTP confirmation")
+            # OTP confirmation successful
+            # Try to auto-login if we have pending registration credentials
+            if getattr(self, "_pending_registration", None):
+                creds = self._pending_registration
+                if self.auth_service.login(creds["email"], creds["password"]):
+                    if self.auth_service.fetch_current_user():
+                        # Auto-login succeeded — remove OTP screen and show main
+                        try:
+                            self.stacked_widget.removeWidget(self.otp_screen)
+                        except Exception:
+                            pass
+                        self._pending_registration = None
+                        self.show_main_screen()
+                        return
+                # Auto-login failed — fall through to show login screen
+            # No auto-login available or it failed: navigate to login screen with a notice
+            self.show_login()
+            # Use login screen's error label to show a success notice (simple UX choice)
+            try:
+                self.login_screen.clear_error()
+                self.login_screen.show_error("Аккаунт подтвержден. Пожалуйста, войдите.")
+            except Exception:
+                pass
         else:
+            # Show error on OTP screen
+            try:
+                self.otp_screen.show_error("Неверный код. Попробуйте еще раз.")
+            except Exception:
+                pass
             print("OTP confirmation failed")
 
     def handle_resend_otp(self):

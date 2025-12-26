@@ -129,6 +129,16 @@ class RegistrationScreen(QWidget):
         title = TitleLabel("Создать аккаунт")
         card.layout.addWidget(title)
 
+        # Username input
+        username_label = FieldLabel("Имя пользователя")
+        card.layout.addWidget(username_label)
+
+        self.username_input = QLineEdit()
+        self.username_input.setObjectName("InputField")
+        self.username_input.setPlaceholderText("Введите имя пользователя")
+        self.username_input.setFixedHeight(50)
+        card.layout.addWidget(self.username_input)
+
         # Email input
         email_label = FieldLabel("Почта")
         card.layout.addWidget(email_label)
@@ -180,10 +190,17 @@ class RegistrationScreen(QWidget):
             self.error_label.setVisible(False)
 
     def handle_registration(self):
+        username = self.username_input.text()
         email = self.email_input.text()
         password = self.password_input.text()
-        print(f"Registration attempt: {email}")
+        print(f"Registration attempt: {email} ({username})")
         self.clear_error()
+
+        # Basic validation before emitting the signal
+        if not username or not email or not password:
+            self.show_error("Пожалуйста, заполните все поля.")
+            return
+
         self.registration_success.emit()
 
 
@@ -221,7 +238,7 @@ class OTPConfirmationScreen(QWidget):
         # OTP inputs container
         otp_container = QHBoxLayout()
         otp_container.setAlignment(Qt.AlignCenter)
-        otp_container.setSpacing(15)
+        otp_container.setSpacing(12)
 
         # Create 6 OTP input fields
         for i in range(6):
@@ -233,6 +250,7 @@ class OTPConfirmationScreen(QWidget):
         otp_widget = QWidget()
         otp_widget.setLayout(otp_container)
         otp_widget.setStyleSheet("background-color: transparent;")
+        otp_widget.setContentsMargins(0, 0, 0, 0)
         card.layout.addWidget(otp_widget)
 
         # Continue button
@@ -240,6 +258,13 @@ class OTPConfirmationScreen(QWidget):
         continue_button.setFixedHeight(50)
         continue_button.clicked.connect(self.handle_continue)
         card.layout.addWidget(continue_button)
+
+        # Error label for OTP (initially hidden)
+        self.error_label = QLabel("")
+        self.error_label.setObjectName("ErrorLabel")
+        self.error_label.setAlignment(Qt.AlignCenter)
+        self.error_label.setVisible(False)
+        card.layout.addWidget(self.error_label)
 
         # Resend OTP link
         resend_text = "<a href='#' style='color: #666666; text-decoration: none;'>Отправить otp код еще раз</a>"
@@ -249,22 +274,32 @@ class OTPConfirmationScreen(QWidget):
 
         layout.addWidget(card)
 
+    def show_error(self, message: str):
+        """Show error message to user"""
+        if self.error_label:
+            self.error_label.setText(message)
+            self.error_label.setVisible(True)
+
+    def clear_error(self):
+        """Clear error message"""
+        if self.error_label:
+            self.error_label.setVisible(False)
+
     def handle_otp_input(self, text: str, index: int):
-        """Handle OTP input and auto-focus next field"""
-        if text and index < 5:
-            self.otp_inputs[index + 1].setFocus()
-        elif not text and index > 0:
-            # Allow backspace to move to previous field
-            pass
+        """Handle OTP input changes and clear errors (focus handled by input)"""
+        # Clear previous errors when user modifies inputs
+        self.clear_error()
+        # Do not change focus here — the individual OTPInput handles navigation to avoid double-advancing
 
     def handle_continue(self):
         """Handle continue button click"""
         otp_code = "".join([input.text() for input in self.otp_inputs])
         if len(otp_code) == 6:
             print(f"OTP confirmation attempt: {otp_code}")
+            self.clear_error()
             self.otp_success.emit()
         else:
-            print("Please enter all 6 digits")
+            self.show_error("Пожалуйста, введите 6 цифр")
 
     def get_otp_code(self) -> str:
         """Get the complete OTP code"""

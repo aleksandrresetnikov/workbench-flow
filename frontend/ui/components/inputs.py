@@ -3,6 +3,7 @@
 
 from PySide6.QtWidgets import QLineEdit, QHBoxLayout, QWidget
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QIntValidator
 from .buttons import EyeButton
 
 class PasswordInput(QWidget):
@@ -53,24 +54,25 @@ class OTPInput(QLineEdit):
         self.setObjectName("OtpInput")
         self.setMaxLength(1)
         self.setAlignment(Qt.AlignCenter)
-        self.setFixedSize(60, 70)
-        # Only allow digits
-        self.setValidator(None)  # Will be handled in keyPressEvent
-    
+        # Size tuned to theme to avoid overlap and leave spacing room
+        self.setFixedSize(56, 64)
+        # Only allow single digits
+        self.setValidator(QIntValidator(0, 9, self))
+
     def keyPressEvent(self, event):
-        """Only allow digits and handle navigation"""
+        """Only allow digits and handle navigation cleanly (input handles focus movement)"""
         if event.text().isdigit():
+            # Insert digit
             super().keyPressEvent(event)
-            # Move to next field if digit entered
-            if self.text():
-                self.focusNextChild()
+            # Move focus to next field after digit input
+            self.focusNextChild()
         elif event.key() in [Qt.Key_Backspace, Qt.Key_Delete]:
             if not self.text():
                 # Move to previous field if backspace on empty field
                 self.focusPreviousChild()
-            super().keyPressEvent(event)
-        elif event.key() in [Qt.Key_Left, Qt.Key_Right]:
-            super().keyPressEvent(event)
-        else:
-            event.ignore()
-
+            else:
+                super().keyPressEvent(event)
+        elif event.key() == Qt.Key_Left:
+            self.focusPreviousChild()
+        elif event.key() == Qt.Key_Right:
+            self.focusNextChild()
